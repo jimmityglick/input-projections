@@ -1,0 +1,57 @@
+{
+  "scenarios": [
+    {
+      "name": "string required missing => Incomplete",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "Scalar",
+          "required": true,
+          "scalar": { "type": "string", "minLength": 1 }
+        }
+      },
+      "steps": [
+        { "type": "Unset", "at": [] }
+      ],
+      "expect": [
+        { "judgment": "Incomplete", "value": "__undefined__" }
+      ]
+    },
+    {
+      "name": "string pattern mismatch => Invalid",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "Scalar",
+          "required": true,
+          "scalar": { "type": "string", "pattern": "^[a-z]+$" }
+        }
+      },
+      "steps": [
+        { "type": "SetScalar", "at": [], "value": "ABC" }
+      ],
+      "expect": [
+        { "judgment": "Invalid" }
+      ]
+    },
+    {
+      "name": "number bounds => Invalid then Valid",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "Scalar",
+          "required": true,
+          "scalar": { "type": "number", "min": 0, "max": 10 }
+        }
+      },
+      "steps": [
+        { "type": "SetScalar", "at": [], "value": 11 },
+        { "type": "SetScalar", "at": [], "value": 5 }
+      ],
+      "expect": [
+        { "judgment": "Invalid" },
+        { "judgment": "Valid" }
+      ]
+    }
+  ]
+}

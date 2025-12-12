@@ -1,0 +1,48 @@
+{
+  "scenarios": [
+    {
+      "name": "relation skipped when operand missing",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "Struct",
+          "fields": {
+            "a": { "kind": "Scalar", "required": true, "scalar": { "type": "number" } },
+            "b": { "kind": "Scalar", "required": true, "scalar": { "type": "number" } }
+          },
+          "required": ["a", "b"],
+          "relations": [{ "op": "lt", "left": "a", "right": "b", "label": "a must be < b" }]
+        }
+      },
+      "steps": [
+        { "type": "SetScalar", "at": ["a"], "value": 1 }
+      ],
+      "expect": [
+        { "judgment": "Incomplete" }
+      ]
+    },
+    {
+      "name": "relation enforced when both operands valid",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "Struct",
+          "fields": {
+            "a": { "kind": "Scalar", "required": true, "scalar": { "type": "number" } },
+            "b": { "kind": "Scalar", "required": true, "scalar": { "type": "number" } }
+          },
+          "required": ["a", "b"],
+          "relations": [{ "op": "lt", "left": "a", "right": "b", "label": "a must be < b" }]
+        }
+      },
+      "steps": [
+        { "type": "SetScalar", "at": ["a"], "value": 10 },
+        { "type": "SetScalar", "at": ["b"], "value": 1 }
+      ],
+      "expect": [
+        { "judgment": "Incomplete" },
+        { "judgment": "Invalid" }
+      ]
+    }
+  ]
+}

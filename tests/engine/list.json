@@ -1,0 +1,45 @@
+{
+  "scenarios": [
+    {
+      "name": "minItems enforced",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "List",
+          "item": { "kind": "Scalar", "scalar": { "type": "string", "minLength": 1 } },
+          "minItems": 1,
+          "maxItems": 3
+        }
+      },
+      "steps": [
+        { "type": "Unset", "at": [] },
+        { "type": "ListAdd", "at": [] },
+        { "type": "SetScalar", "at": [0], "value": "x" }
+      ],
+      "expect": [
+        { "judgment": "Incomplete" },
+        { "judgment": "Incomplete" },
+        { "judgment": "Valid" }
+      ]
+    },
+    {
+      "name": "uniqueItems enforced",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "List",
+          "item": { "kind": "Scalar", "scalar": { "type": "string" } },
+          "maxItems": 3,
+          "uniqueItems": true
+        }
+      },
+      "initialValue": ["a", "a"],
+      "steps": [
+        { "type": "SetScalar", "at": [1], "value": "a" }
+      ],
+      "expect": [
+        { "judgment": "Invalid" }
+      ]
+    }
+  ]
+}

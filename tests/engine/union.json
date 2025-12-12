@@ -1,0 +1,68 @@
+{
+  "scenarios": [
+    {
+      "name": "missing discriminator without default => Incomplete",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "Union",
+          "discriminator": "type",
+          "variants": {
+            "A": { "kind": "Scalar", "scalar": { "type": "string", "minLength": 1 } },
+            "B": { "kind": "Scalar", "scalar": { "type": "number" } }
+          }
+        }
+      },
+      "steps": [
+        { "type": "Unset", "at": [] }
+      ],
+      "expect": [
+        { "judgment": "Incomplete" }
+      ]
+    },
+    {
+      "name": "default applies and data required => Incomplete then Valid",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "Union",
+          "discriminator": "type",
+          "default": "A",
+          "variants": {
+            "A": { "kind": "Scalar", "scalar": { "type": "string", "minLength": 1 } },
+            "B": { "kind": "Scalar", "scalar": { "type": "number" } }
+          }
+        }
+      },
+      "steps": [
+        { "type": "Unset", "at": [] },
+        { "type": "SetScalar", "at": ["data"], "value": "ok" }
+      ],
+      "expect": [
+        { "judgment": "Incomplete" },
+        { "judgment": "Valid" }
+      ]
+    },
+    {
+      "name": "variant change clears data",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "Union",
+          "discriminator": "type",
+          "variants": {
+            "A": { "kind": "Scalar", "scalar": { "type": "string" } },
+            "B": { "kind": "Scalar", "scalar": { "type": "number" } }
+          }
+        }
+      },
+      "initialValue": { "type": "A", "data": "x" },
+      "steps": [
+        { "type": "SetScalar", "at": ["type"], "value": "B" }
+      ],
+      "expect": [
+        { "judgment": "Incomplete", "value": { "type": "B" } }
+      ]
+    }
+  ]
+}
