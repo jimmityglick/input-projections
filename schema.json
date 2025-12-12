@@ -1,0 +1,348 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/input-projection.definition.schema.json",
+  "title": "Input Projection Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["root"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "root": {
+      "$ref": "#/$defs/Node"
+    },
+    "meta": {
+      "$ref": "#/$defs/MetaObject"
+    }
+  },
+  "$defs": {
+    "MetaObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "description": { "type": "string" },
+        "hint": { "type": "string" },
+        "examples": {
+          "type": "array",
+          "items": {}
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "NonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+
+    "PositiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+
+    "StringEnum": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+
+    "StringConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pattern": { "type": "string" },
+        "minLength": { "$ref": "#/$defs/NonNegativeInteger" },
+        "maxLength": { "$ref": "#/$defs/NonNegativeInteger" },
+        "enum": { "$ref": "#/$defs/StringEnum" }
+      }
+    },
+
+    "NumberConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "multipleOf": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+
+    "BooleanConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enum": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "boolean" }
+        }
+      }
+    },
+
+    "NullConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    },
+
+    "ScalarConstraints": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "string" },
+            "pattern": { "type": "string" },
+            "minLength": { "$ref": "#/$defs/NonNegativeInteger" },
+            "maxLength": { "$ref": "#/$defs/NonNegativeInteger" },
+            "enum": { "$ref": "#/$defs/StringEnum" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "number" },
+            "min": { "type": "number" },
+            "max": { "type": "number" },
+            "multipleOf": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "boolean" },
+            "enum": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "boolean" }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "null" }
+          }
+        }
+      ]
+    },
+
+    "NodeId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+
+    "NodeBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/NodeId" },
+        "meta": { "$ref": "#/$defs/MetaObject" }
+      }
+    },
+
+    "Node": {
+      "oneOf": [
+        { "$ref": "#/$defs/ScalarNode" },
+        { "$ref": "#/$defs/StructNode" },
+        { "$ref": "#/$defs/UnionNode" },
+        { "$ref": "#/$defs/ListNode" },
+        { "$ref": "#/$defs/ReferenceNode" }
+      ]
+    },
+
+    "ScalarNode": {
+      "allOf": [
+        { "$ref": "#/$defs/NodeBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "scalar"],
+          "properties": {
+            "kind": { "const": "Scalar" },
+            "required": { "type": "boolean" },
+            "scalar": { "$ref": "#/$defs/ScalarConstraints" }
+          }
+        }
+      ]
+    },
+
+    "StructFields": {
+      "type": "object",
+      "additionalProperties": false,
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+      },
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_]*$": { "$ref": "#/$defs/Node" }
+      }
+    },
+
+    "StructNode": {
+      "allOf": [
+        { "$ref": "#/$defs/NodeBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "fields"],
+          "properties": {
+            "kind": { "const": "Struct" },
+            "fields": { "$ref": "#/$defs/StructFields" },
+            "required": {
+              "type": "array",
+              "items": { "type": "string" },
+              "uniqueItems": true
+            }
+          },
+          "allOf": [
+            {
+              "if": { "required": ["required"] },
+              "then": {
+                "properties": {
+                  "required": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    },
+                    "uniqueItems": true
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    "VariantKey": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+
+    "UnionVariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "propertyNames": { "$ref": "#/$defs/VariantKey" },
+      "patternProperties": {
+        "^[A-Za-z0-9._:-]+$": { "$ref": "#/$defs/Node" }
+      }
+    },
+
+    "UnionNode": {
+      "allOf": [
+        { "$ref": "#/$defs/NodeBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "discriminator", "variants"],
+          "properties": {
+            "kind": { "const": "Union" },
+            "discriminator": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "variants": { "$ref": "#/$defs/UnionVariants" },
+            "default": { "$ref": "#/$defs/VariantKey" }
+          },
+          "allOf": [
+            {
+              "if": { "required": ["default"] },
+              "then": {
+                "properties": {
+                  "default": { "$ref": "#/$defs/VariantKey" }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    "ListNode": {
+      "allOf": [
+        { "$ref": "#/$defs/NodeBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "item", "maxItems"],
+          "properties": {
+            "kind": { "const": "List" },
+            "item": { "$ref": "#/$defs/Node" },
+            "minItems": { "$ref": "#/$defs/NonNegativeInteger" },
+            "maxItems": { "$ref": "#/$defs/NonNegativeInteger" },
+            "uniqueItems": { "type": "boolean" }
+          },
+          "allOf": [
+            {
+              "if": { "required": ["minItems", "maxItems"] },
+              "then": {
+                "properties": {
+                  "minItems": { "$ref": "#/$defs/NonNegativeInteger" },
+                  "maxItems": { "$ref": "#/$defs/NonNegativeInteger" }
+                },
+                "dependentSchemas": {
+                  "minItems": {
+                    "properties": {
+                      "maxItems": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    "ReferenceFormat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pattern": { "type": "string" },
+        "minLength": { "$ref": "#/$defs/NonNegativeInteger" },
+        "maxLength": { "$ref": "#/$defs/NonNegativeInteger" },
+        "enum": { "$ref": "#/$defs/StringEnum" }
+      }
+    },
+
+    "ReferenceNode": {
+      "allOf": [
+        { "$ref": "#/$defs/NodeBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "target"],
+          "properties": {
+            "kind": { "const": "Reference" },
+            "target": { "type": "string", "minLength": 1 },
+            "required": { "type": "boolean" },
+            "format": { "$ref": "#/$defs/ReferenceFormat" }
+          }
+        }
+      ]
+    }
+  }
+}
