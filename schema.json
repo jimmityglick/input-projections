@@ -148,7 +148,6 @@
 
     "NodeBase": {
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/NodeId" },
         "meta": { "$ref": "#/$defs/MetaObject" }
@@ -166,11 +165,12 @@
     },
 
     "ScalarNode": {
+      "type": "object",
+      "unevaluatedProperties": false,
       "allOf": [
         { "$ref": "#/$defs/NodeBase" },
         {
           "type": "object",
-          "additionalProperties": false,
           "required": ["kind", "scalar"],
           "properties": {
             "kind": { "const": "Scalar" },
@@ -195,11 +195,12 @@
     },
 
     "StructNode": {
+      "type": "object",
+      "unevaluatedProperties": false,
       "allOf": [
         { "$ref": "#/$defs/NodeBase" },
         {
           "type": "object",
-          "additionalProperties": false,
           "required": ["kind", "fields"],
           "properties": {
             "kind": { "const": "Struct" },
@@ -248,11 +249,12 @@
     },
 
     "UnionNode": {
+      "type": "object",
+      "unevaluatedProperties": false,
       "allOf": [
         { "$ref": "#/$defs/NodeBase" },
         {
           "type": "object",
-          "additionalProperties": false,
           "required": ["kind", "discriminator", "variants"],
           "properties": {
             "kind": { "const": "Union" },
@@ -279,11 +281,12 @@
     },
 
     "ListNode": {
+      "type": "object",
+      "unevaluatedProperties": false,
       "allOf": [
         { "$ref": "#/$defs/NodeBase" },
         {
           "type": "object",
-          "additionalProperties": false,
           "required": ["kind", "item", "maxItems"],
           "properties": {
             "kind": { "const": "List" },
@@ -329,11 +332,12 @@
     },
 
     "ReferenceNode": {
+      "type": "object",
+      "unevaluatedProperties": false,
       "allOf": [
         { "$ref": "#/$defs/NodeBase" },
         {
           "type": "object",
-          "additionalProperties": false,
           "required": ["kind", "target"],
           "properties": {
             "kind": { "const": "Reference" },
