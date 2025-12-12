@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/input-projection.definition.schema.json",
+  "title": "Input Projection Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "root"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "root": { "$ref": "#/$defs/Node" },
+    "meta": { "$ref": "#/$defs/MetaObject" }
+  },
+  "$defs": {
+    "MetaObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "description": { "type": "string" },
+        "hint": { "type": "string" },
+        "examples": { "type": "array", "items": {} },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "NonNegativeInteger": { "type": "integer", "minimum": 0 },
+
+    "StringEnum": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+
+    "NodeId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+
+    "FieldName": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+
+    "VariantKey": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+
+    "ScalarConstraints": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "string" },
+            "pattern": { "type": "string" },
+            "minLength": { "$ref": "#/$defs/NonNegativeInteger" },
+            "maxLength": { "$ref": "#/$defs/NonNegativeInteger" },
+            "enum": { "$ref": "#/$defs/StringEnum" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "number" },
+            "min": { "type": "number" },
+            "max": { "type": "number" },
+            "multipleOf": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "boolean" },
+            "enum": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "boolean" }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "null" }
+          }
+        }
+      ]
+    },
+
+    "ReferenceFormat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pattern": { "type": "string" },
+        "minLength": { "$ref": "#/$defs/NonNegativeInteger" },
+        "maxLength": { "$ref": "#/$defs/NonNegativeInteger" },
+        "enum": { "$ref": "#/$defs/StringEnum" }
+      }
+    },
+
+    "Node": {
+      "oneOf": [
+        { "$ref": "#/$defs/ScalarNode" },
+        { "$ref": "#/$defs/StructNode" },
+        { "$ref": "#/$defs/UnionNode" },
+        { "$ref": "#/$defs/ListNode" },
+        { "$ref": "#/$defs/ReferenceNode" }
+      ]
+    },
+
+    "ScalarNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "scalar"],
+      "properties": {
+        "id": { "$ref": "#/$defs/NodeId" },
+        "meta": { "$ref": "#/$defs/MetaObject" },
+        "kind": { "const": "Scalar" },
+        "required": { "type": "boolean" },
+        "scalar": { "$ref": "#/$defs/ScalarConstraints" }
+      }
+    },
+
+    "StructNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "fields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/NodeId" },
+        "meta": { "$ref": "#/$defs/MetaObject" },
+        "kind": { "const": "Struct" },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/FieldName" },
+          "patternProperties": {
+            "^[A-Za-z_][A-Za-z0-9_]*$": { "$ref": "#/$defs/Node" }
+          }
+        },
+        "required": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/FieldName" },
+          "uniqueItems": true
+        }
+      }
+    },
+
+    "UnionNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "discriminator", "variants"],
+      "properties": {
+        "id": { "$ref": "#/$defs/NodeId" },
+        "meta": { "$ref": "#/$defs/MetaObject" },
+        "kind": { "const": "Union" },
+        "discriminator": { "$ref": "#/$defs/FieldName" },
+        "variants": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/VariantKey" },
+          "patternProperties": {
+            "^[A-Za-z0-9._:-]+$": { "$ref": "#/$defs/Node" }
+          }
+        },
+        "default": { "$ref": "#/$defs/VariantKey" }
+      }
+    },
+
+    "ListNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "item", "maxItems"],
+      "properties": {
+        "id": { "$ref": "#/$defs/NodeId" },
+        "meta": { "$ref": "#/$defs/MetaObject" },
+        "kind": { "const": "List" },
+        "item": { "$ref": "#/$defs/Node" },
+        "minItems": { "$ref": "#/$defs/NonNegativeInteger" },
+        "maxItems": { "$ref": "#/$defs/NonNegativeInteger" },
+        "uniqueItems": { "type": "boolean" }
+      }
+    },
+
+    "ReferenceNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target"],
+      "properties": {
+        "id": { "$ref": "#/$defs/NodeId" },
+        "meta": { "$ref": "#/$defs/MetaObject" },
+        "kind": { "const": "Reference" },
+        "target": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "format": { "$ref": "#/$defs/ReferenceFormat" }
+      }
+    }
+  }
+}

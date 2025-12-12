@@ -5,7 +5,7 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "${script_dir}/.." && pwd)"
 
-schema_path="${repo_root}/schema.json"
+schema_path="${repo_root}/schema2.json"
 examples_dir="${repo_root}/examples"
 
 if [[ ! -f "${schema_path}" ]]; then
