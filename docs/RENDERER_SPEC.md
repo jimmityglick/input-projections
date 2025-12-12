@@ -1,169 +1,279 @@
-Here is the **Reference Renderer Specification (`RENDERER_SPEC.md`)**.
-
-It formalizes the "Vanilla Inspector" architecture: a dependency-free, recursive DOM renderer that visualizes the Engine's state in real-time.
-
------
-
 # Reference Renderer Specification: The Vanilla Inspector
 
-**Version:** 1.0.0
-**Status:** Planned
-**Scope:** Visualization Layer (The "Water")
+**Version:** 1.2.0
+**Status:** Planned (Normative)
+**Scope:** Visualization Layer (The “Water”)
 
------
+---
 
-## 1\. Goal & Philosophy
+## 1. Goal and Philosophy
 
-The goal is to build the **Reference Implementation** of a User Interface for the Input Projection Engine.
+The Reference Renderer is the canonical, dependency-free user interface for the Input Projection Engine.
 
-Just as the Engine (`src/`) is the "Physics Engine" (calculating state, validity, and cursor), this Renderer is the "Graphics Engine" (visualizing that state).
+* The **Engine** is the physics layer. It computes state, validity, and cursor.
+* The **Renderer** is the graphics layer. It visualizes that state exactly and translates user interaction into Engine actions.
 
-### Core Principles
+The Renderer has **no authority** over correctness. It reflects Engine truth.
 
-1.  **Zero Magic:** Use standard DOM APIs (`document.createElement`, `appendChild`). No Virtual DOM, no Reconciliation algorithms, no Frameworks.
-2.  **Visual Truth:** The UI must be an exact visual representation of the Engine State ($S_t$). If the Engine says "Inactive," the UI must not render it.
-3.  **Instant Feedback:** Validation errors and state changes appear immediately on interaction (per-keystroke dispatch).
-4.  **Developer-First:** The UI will include a "Heads Up Display" (HUD) showing the raw internal state JSON alongside the form, acting as a debugger for the Engine.
+---
 
------
+## 2. Core Principles
 
-## 2\. Architecture
+1. **Zero Magic**
+   Use standard DOM APIs only (`document.createElement`, `appendChild`, `addEventListener`).
+   No frameworks, no virtual DOM, no diffing libraries.
 
-The Renderer operates as a function that synchronizes the DOM with the Engine State.
+2. **Visual Truth**
+   The DOM must be an exact projection of the Engine State (S_t).
 
-```typescript
-render(engine: Engine, container: HTMLElement)
+   * Nodes judged `Inactive` **MUST NOT** render.
+   * Validity classes and error messages must match Engine judgments exactly.
+
+3. **Determinism**
+   Given the same Engine State, the Renderer produces the same DOM structure and behavior.
+
+4. **Immediate Feedback**
+   All interactions dispatch per-keystroke or per-event. Validation feedback appears immediately.
+
+5. **Developer-First**
+   A built-in Heads Up Display (HUD) shows live Engine state for inspection and debugging.
+
+---
+
+## 3. Renderer Contract
+
+```ts
+render(engine: Engine, container: HTMLElement): void
 ```
 
-### 2.1 The "Game Loop"
+* `engine.getState()` is treated as immutable input.
+* `render()` synchronizes the DOM to match the current state.
+* The Renderer does not retain its own application state beyond DOM identity caches.
 
-Unlike traditional web apps that use event listeners to mutate the DOM directly, this renderer follows a strict unidirectional loop:
+---
 
-1.  **Input:** User interacts (types a character).
-2.  **Dispatch:** DOM Event Handler calls `engine.dispatch(Action)`.
-3.  **Update:** Engine computes new State ($S_{t+1}$).
-4.  **Render:** The `render()` function is called with the new State.
-5.  **Sync:** The DOM is updated to match $S_{t+1}$.
+## 4. The Render Loop (Normative)
 
-### 2.2 The DOM Cache (Identity Preservation)
+1. User interacts with the DOM.
+2. Event handler derives the **current ValuePath** and dispatches an `Action` to the Engine.
+3. Engine computes a new immutable State (S_{t+1}).
+4. `render(engine)` is invoked.
+5. Renderer synchronizes the DOM to exactly match (S_{t+1}).
 
-To prevent loss of focus and cursor position during re-renders, elements must preserve **Object Identity**. We strictly forbid `innerHTML = ''` for interactive elements.
+The Renderer never mutates the DOM in response to events directly. All DOM changes flow from Engine state.
 
-  * **Mechanism:** A persistent `Map<string, HTMLElement>` keyed by **Node ID** (or Path).
-  * **Logic:**
-      * *If exists in Map:* Get existing element, update attributes, append to new parent (move).
-      * *If missing:* Create new element, store in Map, append.
-      * *If Inactive:* Do not process (leave detached or remove).
+---
 
------
+## 5. Identity Strategy
 
-## 3\. Component Mapping
+### 5.1 Stable Keying (Normative)
 
-The renderer maps Projection Primitives to Semantic HTML elements.
+To preserve focus and avoid DOM thrashing, elements must preserve object identity.
 
-### 3.1 Styling Strategy
+* **Primary Key:** Projection Path String
+  Example:
 
-  * **CSS Framework:** **Pico.css** (Classless, Semantic).
-  * **Classes:** The renderer applies functional classes for state visualization:
-      * `.node`: All nodes.
-      * `.kind-{type}`: `.kind-scalar`, `.kind-struct`, etc.
-      * `.judgment-{status}`: `.judgment-valid`, `.judgment-invalid`, `.judgment-incomplete`.
-      * `.focused`: If the node path matches `state.cursor`.
+  ```
+  /fields/contact/variants/email/fields/address
+  ```
 
-### 3.2 Primitive Mappings
+* **List Item Exception:**
+  List items are keyed by **index-based Projection Path**:
 
-| Primitive | HTML Representation | Interactions |
-| :--- | :--- | :--- |
-| **Scalar** | `<input>` (Text/Number)<br>`<select>` (Enums)<br>`<input type="checkbox">` (Bool) | `oninput` $\to$ `SetScalar`<br>`onfocus` $\to$ `MoveCursor` |
-| **Struct** | `<fieldset>` with `<legend>` (Label) | None (Container) |
-| **Union** | `<div>` Container<br>`<select>` (Discriminator) | `onchange` $\to$ `SelectVariant` |
-| **List** | `<div>` Container<br>`<button>` "Add Item" | `onclick` $\to$ `ListAdd` |
-| **List Item** | `<div>` Wrapper<br>`<button>` "Remove" | `onclick` $\to$ `ListRemove` |
-| **Reference** | `<input>` (Text) with `placeholder` | `oninput` $\to$ `SetScalar` |
+  ```
+  /fields/items/items/0
+  ```
 
-### 3.3 Error Overlays
+  If item `0` is removed, the DOM element for index `0` is reused to display the data from index `1`.
+  This is explicitly acceptable in v1.
 
-Validation messages (`state.sigma.issues`) are rendered as sibling elements to the input controls.
+### 5.2 DOM Cache
 
-  * **HTML:** `<small class="error-text">Message</small>`
-  * **Visibility:** Only rendered if the Issue's `projectionPath` matches the Node.
+* Maintain a persistent `Map<string, HTMLElement>` keyed by Projection Path String.
+* Cache entries may grow monotonically in v1. Eviction is not required.
 
------
+---
 
-## 4\. Interaction Model
+## 6. The Re-Binding Rule (Critical)
 
-The Renderer translates DOM Events into Engine Actions.
+Whenever a DOM element is retrieved from the cache:
 
-### 4.1 Value Updates
+1. **Re-attach** it to the correct parent.
+2. **Re-bind all event handlers.**
 
-  * **Event:** `input` (Text), `change` (Select/Checkbox).
-  * **Action:** `SetScalar(path, value)`.
-  * **Optimization:** The renderer must check `input.value !== newValue` before writing to the DOM to avoid resetting the caret position.
+   * Event handlers MUST NOT capture `ValuePath` in closures.
+   * Handlers MUST read the current `ValuePath` from element `dataset` at event time.
+3. **Refresh attributes**:
 
-### 4.2 Navigation
+   * `class` (judgment classes)
+   * `disabled`
+   * `dataset.projectionPath`
+   * `dataset.valuePath`
 
-  * **Event:** `focus` (on any input).
-  * **Action:** `MoveCursor(path)`.
-  * **Purpose:** Ensures the Engine knows where the user is, enabling "Contextual Help" or "Keyboard Navigation" features.
+This rule is mandatory to avoid stale paths after normalization (e.g., list reindexing).
 
-### 4.3 Structure Mutation
+---
 
-  * **Union Switch:** `SelectVariant` action clears the old branch and initializes the new one (handled by Engine normalization).
-  * **List Add/Remove:** Buttons dispatch `ListAdd` / `ListRemove`. The Engine handles bounds checking (`maxItems`); the UI just disables the button if the action is invalid.
+## 7. Component Mapping
 
------
+### 7.1 Styling
 
-## 5\. The "Inspector" Layout
+* **CSS:** Pico.css (classless, semantic)
+* **State Classes:**
 
-The application entry point (`index.html`) implements a Split Screen layout to serve as a dev tool.
+  * `.node`
+  * `.judgment-invalid`
+  * `.judgment-incomplete`
+  * `.judgment-valid` (optional)
 
-### Left Panel: The Form
+---
 
-  * **Container:** `#app-form`
-  * **Content:** The rendered output of `render(engine)`.
-  * **Role:** The "User Experience."
+### 7.2 Scalar Rendering (Normative)
 
-### Right Panel: The HUD (Heads Up Display)
+| Scalar Type | Constraints | HTML Control                    | Empty / Clear Behavior                      |
+| ----------- | ----------- | ------------------------------- | ------------------------------------------- |
+| String      | enum        | `<select>`                      | Blank option dispatches `Unset`             |
+| String      | no enum     | `<input type="text">`           | Empty string is a valid value               |
+| Number      | enum        | `<select>`                      | Blank option dispatches `Unset`             |
+| Number      | no enum     | `<input type="number">`         | Empty input dispatches `Unset`              |
+| Boolean     | any         | `<input type="checkbox">`       | Checked = true, unchecked = false           |
+| Null        | any         | `<input disabled value="null">` | Clear button dispatches `Unset` if optional |
 
-  * **Container:** `#app-debug`
-  * **Content:** A live JSON tree view of `engine.getState()`.
-  * **Sections:**
-    1.  **Value ($V_t$):** The clean data being built.
-    2.  **Cursor ($C_t$):** The active path.
-    3.  **Errors ($\Sigma_t$):** Active validation issues.
-    4.  **Last Action:** Debug log of the most recent dispatch.
+#### Explicit Unset
 
------
+All scalar renderers **except checkbox** MUST provide a Clear (“X”) control that dispatches `Unset`.
 
-## 6\. Implementation Plan
+---
 
-### Phase 1: The Scaffolding
+### 7.3 Missing vs Null Policy (Normative)
 
-  * Set up `vite` project.
-  * Install `pico.css`.
-  * Create `src/renderer/index.ts` and `src/renderer/vanilla.ts`.
-  * Implement the `domCache` and the basic recursive walker.
+* **Missing (`undefined`)** and **null** are distinct.
+* Empty string ≠ missing.
+* Checkbox has no missing state in v1.
+* Optional null scalars MUST support both `Unset` and `SetScalar(null)` via UI.
 
-### Phase 2: The Primitives
+---
 
-  * Implement `renderScalar` (Input, Select, Checkbox).
-  * Implement `renderStruct` (Fieldsets).
-  * Implement `renderUnion` (Discriminator Selectors).
-  * Implement `renderList` (Add/Remove buttons).
+### 7.4 Containers
 
-### Phase 3: The Integration
+| Primitive | Representation                            |
+| --------- | ----------------------------------------- |
+| Struct    | `<fieldset>` with `<legend>`              |
+| Union     | `<div>` with `<select>` discriminator     |
+| List      | `<div>` container with Add/Remove buttons |
+| List Item | `<div>` wrapper                           |
 
-  * Wire up the `input` events to `engine.dispatch()`.
-  * Implement the "Split Screen" debugger loop.
-  * Load `tests/fixtures/purchase-order.json` as the demo model.
+---
 
------
+## 8. Error Rendering
 
-## 7\. Success Criteria
+* **Scalar / Reference:** `<small>` immediately after input.
+* **Struct Relations:** Inside `<fieldset>`, immediately after `<legend>`.
+* **List Constraints:** Inside list container, above items.
 
-The Renderer is complete when:
+Error matching rules:
 
-1.  **Typing is smooth:** No focus loss or cursor jumping.
-2.  **Unions work:** Changing the dropdown immediately changes the form fields below it (e.g., "Card" -\> "Cash" hides the number field).
-3.  **Errors appear:** Typing an invalid email immediately shows red text.
-4.  **State is visible:** The JSON on the right updates instantly as you interact on the left.
+* Match **exact Projection Path only**.
+* No prefix or descendant matching.
+
+---
+
+## 9. Interaction Model
+
+### 9.1 Dispatch Rules
+
+* Renderer derives **ValuePath dynamically** during traversal.
+* Actions always use the **latest ValuePath from DOM dataset**, never from closure state.
+
+### 9.2 Focus Synchronization (Bi-Directional)
+
+#### DOM → Engine
+
+* `focus` event dispatches `MoveCursor(projectionPath)`.
+
+#### Engine → DOM
+
+After render:
+
+1. Read `state.cursor.projectionPath`.
+2. Find corresponding DOM element.
+3. If not focusable, focus its **first actionable descendant**.
+4. Focus only if:
+
+   ```
+   document.activeElement !== target
+   ```
+
+This prevents focus loops.
+
+---
+
+## 10. Structural Mutation
+
+### 10.1 Unions
+
+* Changing discriminator dispatches `SelectVariant`.
+* Renderer does not manage data pruning.
+* New branch renders on next frame.
+
+### 10.2 Lists
+
+* Disable Add if `length >= maxItems`.
+* Disable Remove if `length <= minItems` (default 0).
+
+After list mutation:
+
+* Values are rendered first.
+* Focus synchronization runs afterward to avoid stale focus.
+
+---
+
+## 11. HUD (Inspector Panel)
+
+* **Location:** `#app-debug`
+* **Update Policy:** Throttled (`requestAnimationFrame` or ~100ms debounce).
+* **Displayed State:**
+
+  ```json
+  {
+    "cursor": "/items/0/qty",
+    "validity": "Invalid",
+    "errors": ["Qty must be > 0"],
+    "value": { ... }
+  }
+  ```
+
+HUD updates must never block form interaction.
+
+---
+
+## 12. Implementation Phases
+
+### Phase 1: Scaffolding
+
+* Vite setup
+* DOM cache
+* Recursive `processNode`
+
+### Phase 2: Primitives
+
+* Scalar renderer per table
+* Struct + relation error grouping
+* List with bounds logic
+
+### Phase 3: Integration
+
+* Engine wiring
+* Focus synchronization
+* Throttled HUD
+
+---
+
+## 13. Success Criteria
+
+1. Typing never loses focus.
+2. Cursor in HUD tracks keyboard navigation.
+3. List removal reuses DOM without crashing or stale values.
+4. Union switching immediately updates rendered subtree.
+5. Renderer behavior is deterministic and mirrors Engine state exactly.
+
