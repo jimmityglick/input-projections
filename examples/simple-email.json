@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "meta": {
+    "label": "Email Capture"
+  },
+  "root": {
+    "id": "email_node",
+    "kind": "Scalar",
+    "required": true,
+    "scalar": {
+      "type": "string",
+      "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+    }
+  }
+}
