@@ -1,0 +1,160 @@
+{
+  "invalid_slush_root": {
+    "version": "1.0.0",
+    "root": { "kind": "Scalar", "scalar": { "type": "string" } },
+    "extra_garbage": true
+  },
+
+  "invalid_slush_node_level": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Scalar",
+      "scalar": { "type": "string" },
+      "onClick": "alert('hacked')"
+    }
+  },
+
+  "invalid_slush_meta_level": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Scalar",
+      "scalar": { "type": "string" },
+      "meta": {
+        "label": "Name",
+        "custom_config": { "color": "red" }
+      }
+    }
+  },
+
+  "invalid_slush_constraint_level": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Scalar",
+      "scalar": {
+        "type": "string",
+        "pattern": ".*",
+        "transform": "uppercase"
+      }
+    }
+  },
+
+  "invalid_kind_typo": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struuct",
+      "fields": {}
+    }
+  },
+
+  "invalid_scalar_type_confusion_string_min": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Scalar",
+      "scalar": {
+        "type": "string",
+        "min": 10
+      }
+    }
+  },
+
+  "invalid_scalar_type_confusion_number_pattern": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Scalar",
+      "scalar": {
+        "type": "number",
+        "pattern": "^[0-9]$"
+      }
+    }
+  },
+
+  "invalid_struct_empty_fields": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {}
+    }
+  },
+
+  "invalid_struct_bad_key_space": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "first name": { "kind": "Scalar", "scalar": { "type": "string" } }
+      }
+    }
+  },
+
+  "invalid_struct_bad_key_dash": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "first-name": { "kind": "Scalar", "scalar": { "type": "string" } }
+      }
+    }
+  },
+
+  "invalid_union_empty_variants": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Union",
+      "discriminator": "type",
+      "variants": {}
+    }
+  },
+
+  "invalid_union_missing_discriminator": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Union",
+      "variants": {
+        "a": { "kind": "Scalar", "scalar": { "type": "string" } }
+      }
+    }
+  },
+
+  "invalid_list_unbounded": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "List",
+      "item": { "kind": "Scalar", "scalar": { "type": "string" } },
+      "minItems": 0
+    }
+  },
+
+  "invalid_list_negative_max": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "List",
+      "item": { "kind": "Scalar", "scalar": { "type": "string" } },
+      "maxItems": -1
+    }
+  },
+
+  "invalid_ref_slush_format": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Reference",
+      "target": "User",
+      "format": {
+        "exists": true
+      }
+    }
+  },
+
+  "invalid_version_format": {
+    "version": "v1.0",
+    "root": { "kind": "Scalar", "scalar": { "type": "string" } }
+  },
+
+  "invalid_id_format_spaces": {
+    "version": "1.0.0",
+    "root": {
+      "id": "my node id",
+      "kind": "Scalar",
+      "scalar": { "type": "string" }
+    }
+  }
+}

@@ -1,0 +1,228 @@
+{
+  "valid_minimal": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Scalar",
+      "scalar": { "type": "string" }
+    }
+  },
+
+  "valid_deep_mixed_primitives": {
+    "version": "1.2.3",
+    "meta": { "label": "Top-level meta", "tags": ["demo", "schema"] },
+    "root": {
+      "id": "person_projection",
+      "meta": { "label": "Person", "description": "A person capture projection" },
+      "kind": "Struct",
+      "fields": {
+        "name": {
+          "kind": "Struct",
+          "fields": {
+            "first": {
+              "kind": "Scalar",
+              "required": true,
+              "scalar": { "type": "string", "minLength": 1 }
+            },
+            "last": {
+              "kind": "Scalar",
+              "required": true,
+              "scalar": { "type": "string", "minLength": 1 }
+            }
+          },
+          "required": ["first", "last"]
+        },
+        "age": {
+          "kind": "Scalar",
+          "scalar": { "type": "number", "min": 0, "max": 130 }
+        },
+        "contact": {
+          "kind": "Union",
+          "discriminator": "type",
+          "default": "email",
+          "variants": {
+            "email": {
+              "kind": "Struct",
+              "fields": {
+                "type": { "kind": "Scalar", "scalar": { "type": "string", "enum": ["email"] } },
+                "address": {
+                  "kind": "Scalar",
+                  "required": true,
+                  "scalar": {
+                    "type": "string",
+                    "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+                  }
+                }
+              },
+              "required": ["type", "address"]
+            },
+            "phone": {
+              "kind": "Struct",
+              "fields": {
+                "type": { "kind": "Scalar", "scalar": { "type": "string", "enum": ["phone"] } },
+                "number": {
+                  "kind": "Scalar",
+                  "required": true,
+                  "scalar": {
+                    "type": "string",
+                    "pattern": "^\\+?[0-9][0-9\\-\\s]{6,20}$"
+                  }
+                }
+              },
+              "required": ["type", "number"]
+            }
+          }
+        },
+        "tags": {
+          "kind": "List",
+          "minItems": 0,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "item": {
+            "kind": "Scalar",
+            "scalar": { "type": "string", "minLength": 1, "maxLength": 24 }
+          }
+        },
+        "accountId": {
+          "kind": "Reference",
+          "target": "Account",
+          "required": true,
+          "format": { "pattern": "^acct_[A-Za-z0-9]{8,32}$" },
+          "meta": { "label": "Account", "hint": "Paste the account key" }
+        }
+      },
+      "required": ["name", "contact", "accountId"]
+    }
+  },
+
+  "valid_all_scalar_types": {
+    "version": "2.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "s": { "kind": "Scalar", "scalar": { "type": "string", "pattern": "^[A-Z]+$" } },
+        "n": { "kind": "Scalar", "scalar": { "type": "number", "min": -10, "max": 10 } },
+        "b": { "kind": "Scalar", "scalar": { "type": "boolean", "enum": [true, false] } },
+        "z": { "kind": "Scalar", "scalar": { "type": "null" } }
+      },
+      "required": ["s", "n", "b", "z"]
+    }
+  },
+
+  "valid_union_without_default": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Union",
+      "discriminator": "kind",
+      "variants": {
+        "a": { "kind": "Scalar", "scalar": { "type": "string" } },
+        "b": { "kind": "Scalar", "scalar": { "type": "number" } }
+      }
+    }
+  },
+
+  "valid_list_bounds": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "List",
+      "minItems": 2,
+      "maxItems": 2,
+      "item": {
+        "kind": "Struct",
+        "fields": {
+          "line1": { "kind": "Scalar", "scalar": { "type": "string", "minLength": 1 } },
+          "line2": { "kind": "Scalar", "scalar": { "type": "string" } }
+        },
+        "required": ["line1"]
+      }
+    }
+  },
+
+  "invalid_missing_required_top_level": {
+    "version": "1.0.0"
+  },
+
+  "invalid_unknown_node_kind": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Map",
+      "fields": {}
+    }
+  },
+
+  "invalid_extra_property_on_node": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Scalar",
+      "scalar": { "type": "string" },
+      "ui": { "widget": "textbox" }
+    }
+  },
+
+  "invalid_struct_bad_field_name": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "first-name": { "kind": "Scalar", "scalar": { "type": "string" } }
+      }
+    }
+  },
+
+  "invalid_union_missing_discriminator": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Union",
+      "variants": {
+        "a": { "kind": "Scalar", "scalar": { "type": "string" } }
+      }
+    }
+  },
+
+  "invalid_union_bad_variant_key": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Union",
+      "discriminator": "type",
+      "variants": {
+        "bad key": { "kind": "Scalar", "scalar": { "type": "string" } }
+      }
+    }
+  },
+
+  "invalid_list_missing_maxItems": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "List",
+      "item": { "kind": "Scalar", "scalar": { "type": "string" } }
+    }
+  },
+
+  "invalid_reference_format_extra_prop": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Reference",
+      "target": "Account",
+      "format": {
+        "pattern": "^acct_",
+        "unknown": true
+      }
+    }
+  },
+
+  "invalid_scalar_constraints_wrong_shape": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Scalar",
+      "scalar": { "type": "string", "min": 1 }
+    }
+  },
+
+  "invalid_node_meta_extra_prop": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Scalar",
+      "scalar": { "type": "string" },
+      "meta": { "label": "x", "color": "red" }
+    }
+  }
+}
