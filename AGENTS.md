@@ -2,9 +2,11 @@
 
 ## Project Structure
 
-- `schema.json`: Canonical JSON Schema (draft 2020-12) for Input Projection definitions.
-- `schema2.json`: Stricter schema variant used by the test runner by default (override with `--schema`).
-- `tests/fixtures/`: Fixture projection files (`*.json`) that should validate against `schema.json`.
+- `schemas/`: JSON Schema files (draft 2020-12) for Input Projection definitions.
+  - `schemas/projection.latest.schema.json`: Default schema pointer used by tooling.
+  - `schemas/projection.v2.schema.json`: Current schema version used by the test runner by default.
+  - `schemas/projection.v1.schema.json`: Legacy schema version retained for reference.
+- `tests/fixtures/`: Fixture projection files (`*.json`) that should validate against `schemas/projection.latest.schema.json`.
 - `tests/cases/`: JSON test suites (`*.json`) mapping `testName -> projection`.
 - `tools/`: Developer utilities (example validation, ad-hoc test runners).
 - `docs/`: Specification documents (`docs/SPEC.md`, `docs/full_specification.md`).

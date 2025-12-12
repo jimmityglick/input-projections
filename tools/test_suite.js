@@ -23,6 +23,30 @@ function formatErrors(errors) {
     .join("; ");
 }
 
+function resolveSchemaPointer(schemaFilePath) {
+  const schema = readJson(schemaFilePath);
+
+  if (
+    !schema ||
+    typeof schema !== "object" ||
+    Array.isArray(schema) ||
+    typeof schema.$ref !== "string"
+  ) {
+    return { schemaPath: schemaFilePath, schema };
+  }
+
+  const ref = schema.$ref;
+  const looksLikeLocalFileRef =
+    ref.startsWith("./") || ref.startsWith("../") || ref.endsWith(".json");
+  if (!looksLikeLocalFileRef) return { schemaPath: schemaFilePath, schema };
+
+  const resolvedPath = path.resolve(path.dirname(schemaFilePath), ref);
+  if (!fs.existsSync(resolvedPath)) {
+    return { schemaPath: resolvedPath, schema: null };
+  }
+  return { schemaPath: resolvedPath, schema: readJson(resolvedPath) };
+}
+
 function parseArgs(argv) {
   const args = {
     schema: null,
@@ -85,7 +109,7 @@ function printUsage() {
   ${cmd} tests/cases/core.json # run one case file
 
 Options:
-  --schema <path>        (default: schema2.json if present, else schema.json)
+  --schema <path>        (default: schemas/projection.latest.schema.json)
   --testsDir <dir>       (default: tests)
   --casesDir <dir>       (default: tests/cases)
   --fixturesDir <dir>    (default: tests/fixtures)
@@ -95,11 +119,20 @@ Options:
 }
 
 const repoRoot = path.resolve(__dirname, "..");
-const schema2Path = path.join(repoRoot, "schema2.json");
-const schemaJsonPath = path.join(repoRoot, "schema.json");
+const schemaLatestPath = path.join(
+  repoRoot,
+  "schemas",
+  "projection.latest.schema.json",
+);
+const schemaV2Path = path.join(repoRoot, "schemas", "projection.v2.schema.json");
+const schemaV1Path = path.join(repoRoot, "schemas", "projection.v1.schema.json");
 
 const defaults = {
-  schema: fs.existsSync(schema2Path) ? schema2Path : schemaJsonPath,
+  schema: fs.existsSync(schemaLatestPath)
+    ? schemaLatestPath
+    : fs.existsSync(schemaV2Path)
+      ? schemaV2Path
+      : schemaV1Path,
   testsDir: path.join(repoRoot, "tests"),
   casesDir: path.join(repoRoot, "tests", "cases"),
   fixturesDir: path.join(repoRoot, "tests", "fixtures"),
@@ -130,7 +163,14 @@ const ajv = new Ajv({
 });
 addFormats(ajv);
 
-const schema = readJson(schemaPath);
+const { schemaPath: resolvedSchemaPath, schema } =
+  resolveSchemaPointer(schemaPath);
+
+if (!fs.existsSync(resolvedSchemaPath) || !schema) {
+  console.error(`error: schema not found: ${resolvedSchemaPath}`);
+  process.exit(1);
+}
+
 const validate = ajv.compile(schema);
 
 const caseFiles =
