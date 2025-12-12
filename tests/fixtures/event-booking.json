@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "meta": {
+    "label": "Event Booking",
+    "description": "Event scheduling with date range validation"
+  },
+  "root": {
+    "id": "event_booking",
+    "kind": "Struct",
+    "fields": {
+      "event_name": {
+        "kind": "Scalar",
+        "required": true,
+        "scalar": { "type": "string", "minLength": 1, "maxLength": 200 }
+      },
+      "start_date": {
+        "id": "start_date",
+        "kind": "Scalar",
+        "required": true,
+        "meta": { "hint": "ISO 8601 date format" },
+        "scalar": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+      },
+      "end_date": {
+        "id": "end_date",
+        "kind": "Scalar",
+        "required": true,
+        "meta": { "hint": "ISO 8601 date format" },
+        "scalar": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+      },
+      "start_time": {
+        "id": "start_time",
+        "kind": "Scalar",
+        "scalar": { "type": "string", "pattern": "^[0-9]{2}:[0-9]{2}$" }
+      },
+      "end_time": {
+        "id": "end_time",
+        "kind": "Scalar",
+        "scalar": { "type": "string", "pattern": "^[0-9]{2}:[0-9]{2}$" }
+      }
+    },
+    "required": ["event_name", "start_date", "end_date"],
+    "relations": [
+      {
+        "op": "lte",
+        "left": "start_date",
+        "right": "end_date",
+        "label": "Start date must be on or before end date"
+      },
+      {
+        "op": "lt",
+        "left": "start_time",
+        "right": "end_time",
+        "label": "Start time must be before end time"
+      }
+    ]
+  }
+}

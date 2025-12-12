@@ -112,6 +112,23 @@
       }
     },
 
+    "RelationOperator": {
+      "type": "string",
+      "enum": ["eq", "neq", "gt", "lt", "gte", "lte"]
+    },
+
+    "Relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "left", "right", "label"],
+      "properties": {
+        "op": { "$ref": "#/$defs/RelationOperator" },
+        "left": { "$ref": "#/$defs/FieldName" },
+        "right": { "$ref": "#/$defs/FieldName" },
+        "label": { "type": "string" }
+      }
+    },
+
     "Node": {
       "oneOf": [
         { "$ref": "#/$defs/ScalarNode" },
@@ -156,6 +173,10 @@
           "type": "array",
           "items": { "$ref": "#/$defs/FieldName" },
           "uniqueItems": true
+        },
+        "relations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Relation" }
         }
       }
     },

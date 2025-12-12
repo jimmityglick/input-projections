@@ -188,12 +188,16 @@ It represents logical **conjunction**.
 
 ### Role
 
-* Groups multiple Projections into a single composite value.  
+* Groups multiple Projections into a single composite value.
 * Defines internal structure without introducing behavior.
+
+### Relations
+
+A Struct may declare an optional `relations` array of cross-field predicates (see The Constraint Layer).
 
 ### Logic
 
-A value of a Struct is valid if and only if **all** of its fields are valid.
+A value of a Struct is valid if and only if **all** of its fields are valid **AND** all declared Relations evaluate to True.
 
 Example logic:
 
@@ -201,8 +205,8 @@ A `Person` is a `Name` **AND** an `Age`.
 
 ### Adherence to Axioms
 
-* **Finite:** The number of fields is fixed.  
-* **Declarative:** It describes shape, not construction.  
+* **Finite:** The number of fields is fixed.
+* **Declarative:** It describes shape, not construction.
 * **Locally Valid:** Validity depends only on contained fields.
 
 ---
@@ -314,15 +318,41 @@ They are **predicates** applied to existing primitives to define the boundary of
 
 **Properties of Constraints** All constraint predicates must be:
 
-1. **Pure:** Evaluation depends *only* on the input value and the declared constraint parameters. No side effects, no system time, no random numbers.  
+1. **Pure:** Evaluation depends *only* on the input value and the declared constraint parameters. No side effects, no system time, no random numbers.
 2. **Total:** The predicate must return a boolean result for *any* possible input value (including `null` or wrong types) without throwing an exception.
 
-### Examples
+### Scalar Constraints
 
-* Scalar: pattern, minimum, maximum  
-* Struct: required fields  
-* Union: discriminator validity  
-* List: minItems, maxItems, uniqueness  
+Scalars support type-specific constraints: `pattern`, `minLength`, `maxLength`, `enum` (strings); `min`, `max`, `multipleOf` (numbers); `enum` (booleans).
+
+### Struct Constraints (Relations)
+
+Structs support cross-field validation via an optional `relations` array. Each **Relation** is a declarative predicate comparing two sibling fields.
+
+* **Locality:** Relations operate only between fields of the same Struct (sibling fields). Cross-struct or nested field references are forbidden.
+* **Relation Object:**
+    * `op`: The comparison operator. One of: `eq`, `neq`, `gt`, `lt`, `gte`, `lte`.
+    * `left`: Field name of the first operand.
+    * `right`: Field name of the second operand.
+    * `label`: User-facing error message when the relation fails.
+
+* **Allowed Operators:**
+    | Operator | Meaning                  |
+    |----------|--------------------------|
+    | `eq`     | left == right            |
+    | `neq`    | left != right            |
+    | `gt`     | left > right             |
+    | `lt`     | left < right             |
+    | `gte`    | left >= right            |
+    | `lte`    | left <= right            |
+
+* **Evaluation:** Relations are evaluated only when both operand fields are present and individually valid. A missing or invalid operand does not cause the relation to fail—it is skipped.
+
+### Other Constraints
+
+* Struct: required fields
+* Union: discriminator validity
+* List: minItems, maxItems, uniqueness
 * Reference: key format
 
 Constraints refine structure; they do not add expressive power.
@@ -465,12 +495,14 @@ Same judgment rules as Scalar, except constraints are **format-only**. Existence
 
 * Shape: object with named fields
 
-Judgment is computed by aggregation over children plus local constraints:
+Judgment is computed by aggregation over children plus local constraints (including relations):
 
-* **Invalid**: any active child is Invalid, or any local constraint fails  
-* **Incomplete**: no active child is Invalid, and at least one required child is Incomplete or missing  
-* **Valid**: all required children are Valid, all present optional children are Valid, and local constraints hold  
+* **Invalid**: any active child is Invalid, or any local constraint fails, or any relation fails (when both operands are present and valid)
+* **Incomplete**: no active child is Invalid, and at least one required child is Incomplete or missing
+* **Valid**: all required children are Valid, all present optional children are Valid, local constraints hold, and all relations evaluate to True
 * **Inactive**: only when the Struct itself resides in an Inactive subtree
+
+**Note on Relations:** Relations are only evaluated when both operand fields are present and individually valid. A relation with a missing or invalid operand is skipped (does not contribute to Invalid judgment).
 
 ### **3.4 Union (Discriminated Sum)**
 

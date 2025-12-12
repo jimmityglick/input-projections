@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "meta": {
+    "label": "Price Range Filter",
+    "description": "Product search filter with min/max price bounds"
+  },
+  "root": {
+    "id": "price_filter",
+    "kind": "Struct",
+    "fields": {
+      "category": {
+        "kind": "Reference",
+        "target": "ProductCategory",
+        "required": true
+      },
+      "min_price": {
+        "id": "min_price",
+        "kind": "Scalar",
+        "meta": { "label": "Minimum Price" },
+        "scalar": { "type": "number", "min": 0 }
+      },
+      "max_price": {
+        "id": "max_price",
+        "kind": "Scalar",
+        "meta": { "label": "Maximum Price" },
+        "scalar": { "type": "number", "min": 0 }
+      },
+      "min_rating": {
+        "id": "min_rating",
+        "kind": "Scalar",
+        "scalar": { "type": "number", "min": 0, "max": 5 }
+      },
+      "max_rating": {
+        "id": "max_rating",
+        "kind": "Scalar",
+        "scalar": { "type": "number", "min": 0, "max": 5 }
+      }
+    },
+    "relations": [
+      {
+        "op": "lte",
+        "left": "min_price",
+        "right": "max_price",
+        "label": "Minimum price cannot exceed maximum price"
+      },
+      {
+        "op": "lte",
+        "left": "min_rating",
+        "right": "max_rating",
+        "label": "Minimum rating cannot exceed maximum rating"
+      }
+    ]
+  }
+}

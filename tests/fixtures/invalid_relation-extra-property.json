@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "root": {
+    "kind": "Struct",
+    "fields": {
+      "a": { "kind": "Scalar", "scalar": { "type": "number" } },
+      "b": { "kind": "Scalar", "scalar": { "type": "number" } }
+    },
+    "relations": [
+      {
+        "op": "eq",
+        "left": "a",
+        "right": "b",
+        "label": "Should match",
+        "severity": "error"
+      }
+    ]
+  }
+}

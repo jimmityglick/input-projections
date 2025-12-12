@@ -230,5 +230,128 @@
       "scalar": { "type": "string" },
       "meta": { "label": "x", "color": "red" }
     }
+  },
+
+  "valid_struct_with_relations": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "password": { "kind": "Scalar", "scalar": { "type": "string", "minLength": 8 } },
+        "confirm_password": { "kind": "Scalar", "scalar": { "type": "string", "minLength": 8 } }
+      },
+      "required": ["password", "confirm_password"],
+      "relations": [
+        {
+          "op": "eq",
+          "left": "password",
+          "right": "confirm_password",
+          "label": "Passwords must match"
+        }
+      ]
+    }
+  },
+
+  "valid_struct_with_date_relation": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "start_date": { "kind": "Scalar", "scalar": { "type": "string" } },
+        "end_date": { "kind": "Scalar", "scalar": { "type": "string" } }
+      },
+      "relations": [
+        {
+          "op": "lt",
+          "left": "start_date",
+          "right": "end_date",
+          "label": "Start date must be before end date"
+        }
+      ]
+    }
+  },
+
+  "valid_struct_with_multiple_relations": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "min_value": { "kind": "Scalar", "scalar": { "type": "number" } },
+        "current_value": { "kind": "Scalar", "scalar": { "type": "number" } },
+        "max_value": { "kind": "Scalar", "scalar": { "type": "number" } }
+      },
+      "relations": [
+        { "op": "lte", "left": "min_value", "right": "current_value", "label": "Current must be >= min" },
+        { "op": "lte", "left": "current_value", "right": "max_value", "label": "Current must be <= max" },
+        { "op": "lt", "left": "min_value", "right": "max_value", "label": "Min must be less than max" }
+      ]
+    }
+  },
+
+  "valid_struct_empty_relations": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "name": { "kind": "Scalar", "scalar": { "type": "string" } }
+      },
+      "relations": []
+    }
+  },
+
+  "invalid_relation_unknown_operator": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "a": { "kind": "Scalar", "scalar": { "type": "number" } },
+        "b": { "kind": "Scalar", "scalar": { "type": "number" } }
+      },
+      "relations": [
+        { "op": "contains", "left": "a", "right": "b", "label": "Invalid op" }
+      ]
+    }
+  },
+
+  "invalid_relation_missing_label": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "a": { "kind": "Scalar", "scalar": { "type": "number" } },
+        "b": { "kind": "Scalar", "scalar": { "type": "number" } }
+      },
+      "relations": [
+        { "op": "eq", "left": "a", "right": "b" }
+      ]
+    }
+  },
+
+  "invalid_relation_extra_property": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "a": { "kind": "Scalar", "scalar": { "type": "number" } },
+        "b": { "kind": "Scalar", "scalar": { "type": "number" } }
+      },
+      "relations": [
+        { "op": "eq", "left": "a", "right": "b", "label": "Match", "custom": true }
+      ]
+    }
+  },
+
+  "invalid_relation_bad_field_name": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Struct",
+      "fields": {
+        "a": { "kind": "Scalar", "scalar": { "type": "number" } },
+        "b": { "kind": "Scalar", "scalar": { "type": "number" } }
+      },
+      "relations": [
+        { "op": "eq", "left": "a-b", "right": "b", "label": "Invalid field name" }
+      ]
+    }
   }
 }

@@ -1,0 +1,141 @@
+{
+  "version": "1.0.0",
+  "meta": {
+    "label": "Job Application",
+    "description": "Job application with nested structs containing relations"
+  },
+  "root": {
+    "id": "job_application",
+    "kind": "Struct",
+    "fields": {
+      "applicant": {
+        "id": "applicant_info",
+        "kind": "Struct",
+        "fields": {
+          "first_name": {
+            "kind": "Scalar",
+            "required": true,
+            "scalar": { "type": "string", "minLength": 1 }
+          },
+          "last_name": {
+            "kind": "Scalar",
+            "required": true,
+            "scalar": { "type": "string", "minLength": 1 }
+          },
+          "email": {
+            "kind": "Scalar",
+            "required": true,
+            "scalar": { "type": "string" }
+          }
+        },
+        "required": ["first_name", "last_name", "email"]
+      },
+      "salary_expectations": {
+        "id": "salary",
+        "kind": "Struct",
+        "fields": {
+          "minimum": {
+            "id": "salary_min",
+            "kind": "Scalar",
+            "required": true,
+            "scalar": { "type": "number", "min": 0 }
+          },
+          "maximum": {
+            "id": "salary_max",
+            "kind": "Scalar",
+            "required": true,
+            "scalar": { "type": "number", "min": 0 }
+          },
+          "ideal": {
+            "id": "salary_ideal",
+            "kind": "Scalar",
+            "scalar": { "type": "number", "min": 0 }
+          }
+        },
+        "required": ["minimum", "maximum"],
+        "relations": [
+          {
+            "op": "lte",
+            "left": "minimum",
+            "right": "maximum",
+            "label": "Minimum salary must not exceed maximum"
+          },
+          {
+            "op": "gte",
+            "left": "ideal",
+            "right": "minimum",
+            "label": "Ideal salary must be at least the minimum"
+          },
+          {
+            "op": "lte",
+            "left": "ideal",
+            "right": "maximum",
+            "label": "Ideal salary must not exceed maximum"
+          }
+        ]
+      },
+      "availability": {
+        "id": "availability",
+        "kind": "Struct",
+        "fields": {
+          "earliest_start": {
+            "id": "earliest",
+            "kind": "Scalar",
+            "required": true,
+            "scalar": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+          },
+          "latest_start": {
+            "id": "latest",
+            "kind": "Scalar",
+            "scalar": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+          }
+        },
+        "required": ["earliest_start"],
+        "relations": [
+          {
+            "op": "lte",
+            "left": "earliest_start",
+            "right": "latest_start",
+            "label": "Earliest start must be on or before latest start"
+          }
+        ]
+      },
+      "work_history": {
+        "kind": "List",
+        "minItems": 0,
+        "maxItems": 10,
+        "item": {
+          "kind": "Struct",
+          "fields": {
+            "company": {
+              "kind": "Scalar",
+              "required": true,
+              "scalar": { "type": "string" }
+            },
+            "start_year": {
+              "id": "job_start",
+              "kind": "Scalar",
+              "required": true,
+              "scalar": { "type": "number", "min": 1950, "max": 2100 }
+            },
+            "end_year": {
+              "id": "job_end",
+              "kind": "Scalar",
+              "scalar": { "type": "number", "min": 1950, "max": 2100 }
+            }
+          },
+          "required": ["company", "start_year"],
+          "relations": [
+            {
+              "op": "lte",
+              "left": "start_year",
+              "right": "end_year",
+              "label": "Start year must be on or before end year"
+            }
+          ]
+        }
+      }
+    },
+    "required": ["applicant", "salary_expectations", "availability"]
+  }
+}

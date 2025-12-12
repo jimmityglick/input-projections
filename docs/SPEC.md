@@ -45,7 +45,8 @@ An Input Projection must be composed of exactly these **five** structural primit
 ### 2.2 The Struct (Product Type)
 
   * **Definition:** Fixed collection of named Projections (Logical AND).
-  * **Logic:** Valid iff **all** fields are valid.
+  * **Relations:** A Struct may declare an optional `relations` array of cross-field predicates (see §2.6).
+  * **Logic:** Valid iff **all** fields are valid **AND** all declared Relations evaluate to True.
 
 ### 2.3 The Union (Sum Type)
 
@@ -69,6 +70,33 @@ An Input Projection must be composed of exactly these **five** structural primit
 Constraints are predicates applied to primitives.
 
   * **Purity Requirement:** All predicates must be **Pure** (no side effects) and **Total** (must return boolean for any input without crashing).
+
+#### 2.6.1 Scalar Constraints
+
+Scalars support type-specific constraints: `pattern`, `minLength`, `maxLength`, `enum` (strings); `min`, `max`, `multipleOf` (numbers); `enum` (booleans).
+
+#### 2.6.2 Struct Constraints (Relations)
+
+Structs support cross-field validation via an optional `relations` array. Each **Relation** is a declarative predicate comparing two sibling fields.
+
+  * **Locality:** Relations operate only between fields of the same Struct (sibling fields). Cross-struct or nested field references are forbidden.
+  * **Relation Object:**
+      * `op`: The comparison operator. One of: `eq`, `neq`, `gt`, `lt`, `gte`, `lte`.
+      * `left`: Field name of the first operand.
+      * `right`: Field name of the second operand.
+      * `label`: User-facing error message when the relation fails.
+
+  * **Allowed Operators:**
+      | Operator | Meaning                  |
+      |----------|--------------------------|
+      | `eq`     | left == right            |
+      | `neq`    | left != right            |
+      | `gt`     | left > right             |
+      | `lt`     | left < right             |
+      | `gte`    | left >= right            |
+      | `lte`    | left <= right            |
+
+  * **Evaluation:** Relations are evaluated only when both operand fields are present and individually valid. A missing or invalid operand does not cause the relation to fail—it is skipped.
 
 -----
 
@@ -205,6 +233,19 @@ Any valid Input Projection file must validate against this schema.
       ]
     },
     "NodeId": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9._:-]+$" },
+    "FieldName": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+    "RelationOperator": { "type": "string", "enum": ["eq", "neq", "gt", "lt", "gte", "lte"] },
+    "Relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "left", "right", "label"],
+      "properties": {
+        "op": { "$ref": "#/$defs/RelationOperator" },
+        "left": { "$ref": "#/$defs/FieldName" },
+        "right": { "$ref": "#/$defs/FieldName" },
+        "label": { "type": "string" }
+      }
+    },
     "NodeBase": {
       "type": "object",
       "additionalProperties": false,
@@ -251,7 +292,8 @@ Any valid Input Projection file must validate against this schema.
               "additionalProperties": false,
               "patternProperties": { "^[A-Za-z_][A-Za-z0-9_]*$": { "$ref": "#/$defs/Node" } }
             },
-            "required": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+            "required": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+            "relations": { "type": "array", "items": { "$ref": "#/$defs/Relation" } }
           }
         }
       ]
