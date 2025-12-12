@@ -16,8 +16,6 @@
 - `npm install`: Installs local JS dependencies (Ajv + formats) used by some tooling.
 - `npm test`: Runs the full test suite (fixtures + case suites).
 - `node tools/test_suite.js`: Runs the test suite directly (supports `--schema`, `--casesDir`, `--fixturesDir`).
-- `./tools/run_examples.sh`: Compatibility wrapper around the test suite (despite the legacy name).
-- `./tools/run_examples.sh tests/fixtures/simple-email.json`: Validates a single fixture file.
 
 ## Coding Style & Naming Conventions
 
