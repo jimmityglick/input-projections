@@ -21,17 +21,17 @@
           "kind": "Struct",
           "required": ["sku", "qty"],
           "fields": {
-            "sku": { 
-                "id": "sku_val", 
-                "kind": "Scalar", 
-                "required": true, 
-                "scalar": { "type": "string" } 
+            "sku": {
+              "id": "sku_val",
+              "kind": "Scalar",
+              "required": true,
+              "scalar": { "type": "string" }
             },
-            "qty": { 
-                "id": "qty_val", 
-                "kind": "Scalar", 
-                "required": true, 
-                "scalar": { "type": "number", "min": 1 } 
+            "qty": {
+              "id": "qty_val",
+              "kind": "Scalar",
+              "required": true,
+              "scalar": { "type": "number", "min": 1 }
             }
           }
         }

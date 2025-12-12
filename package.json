@@ -2,6 +2,7 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "node tools/test_suite.js",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

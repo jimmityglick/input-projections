@@ -38,84 +38,90 @@
         "contact": {
           "kind": "Union",
           "discriminator": "type",
-          "default": "email",
           "variants": {
             "email": {
-              "kind": "Struct",
-              "fields": {
-                "type": { "kind": "Scalar", "scalar": { "type": "string", "enum": ["email"] } },
-                "address": {
-                  "kind": "Scalar",
-                  "required": true,
-                  "scalar": {
-                    "type": "string",
-                    "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
-                  }
-                }
-              },
-              "required": ["type", "address"]
+              "kind": "Scalar",
+              "required": true,
+              "scalar": {
+                "type": "string",
+                "pattern": "^[^\\\\s@]+@[^\\\\s@]+\\\\.[^\\\\s@]+$"
+              }
             },
             "phone": {
-              "kind": "Struct",
-              "fields": {
-                "type": { "kind": "Scalar", "scalar": { "type": "string", "enum": ["phone"] } },
-                "number": {
-                  "kind": "Scalar",
-                  "required": true,
-                  "scalar": {
-                    "type": "string",
-                    "pattern": "^\\+?[0-9][0-9\\-\\s]{6,20}$"
-                  }
-                }
-              },
-              "required": ["type", "number"]
+              "kind": "Scalar",
+              "required": true,
+              "scalar": {
+                "type": "string",
+                "pattern": "^\\\\+?[0-9]{7,15}$"
+              }
             }
           }
         },
-        "tags": {
+        "dependents": {
           "kind": "List",
           "minItems": 0,
           "maxItems": 5,
-          "uniqueItems": true,
           "item": {
-            "kind": "Scalar",
-            "scalar": { "type": "string", "minLength": 1, "maxLength": 24 }
+            "kind": "Struct",
+            "fields": {
+              "name": { "kind": "Scalar", "scalar": { "type": "string" } },
+              "age": { "kind": "Scalar", "scalar": { "type": "number", "min": 0 } }
+            }
           }
         },
-        "accountId": {
+        "customer_id": {
           "kind": "Reference",
-          "target": "Account",
-          "required": true,
-          "format": { "pattern": "^acct_[A-Za-z0-9]{8,32}$" },
-          "meta": { "label": "Account", "hint": "Paste the account key" }
+          "target": "Customer",
+          "format": { "pattern": "^[A-Z0-9_-]+$" }
         }
-      },
-      "required": ["name", "contact", "accountId"]
+      }
     }
   },
 
-  "valid_all_scalar_types": {
-    "version": "2.0.0",
+  "valid_meta_top_level_only": {
+    "version": "1.0.0",
+    "meta": {
+      "label": "Projection title",
+      "description": "Longer description",
+      "hint": "A hint for UI",
+      "tags": ["tag1", "tag2"],
+      "examples": ["foo", 123, { "a": true }]
+    },
     "root": {
-      "kind": "Struct",
-      "fields": {
-        "s": { "kind": "Scalar", "scalar": { "type": "string", "pattern": "^[A-Z]+$" } },
-        "n": { "kind": "Scalar", "scalar": { "type": "number", "min": -10, "max": 10 } },
-        "b": { "kind": "Scalar", "scalar": { "type": "boolean", "enum": [true, false] } },
-        "z": { "kind": "Scalar", "scalar": { "type": "null" } }
-      },
-      "required": ["s", "n", "b", "z"]
+      "kind": "Scalar",
+      "scalar": { "type": "boolean" }
     }
   },
 
-  "valid_union_without_default": {
+  "valid_reference_with_format": {
+    "version": "1.0.0",
+    "root": {
+      "kind": "Reference",
+      "target": "Account",
+      "required": true,
+      "format": {
+        "pattern": "^acct_[0-9]+$",
+        "minLength": 6,
+        "maxLength": 32
+      }
+    }
+  },
+
+  "valid_union_with_default": {
     "version": "1.0.0",
     "root": {
       "kind": "Union",
-      "discriminator": "kind",
+      "discriminator": "type",
+      "default": "email",
       "variants": {
-        "a": { "kind": "Scalar", "scalar": { "type": "string" } },
-        "b": { "kind": "Scalar", "scalar": { "type": "number" } }
+        "email": {
+          "kind": "Scalar",
+          "scalar": { "type": "string", "pattern": "@" }
+        },
+        "phone": {
+          "kind": "Scalar",
+          "scalar": { "type": "string", "minLength": 7 }
+        }
       }
     }
   },
