@@ -7,7 +7,7 @@ import { updateHUD } from "./hud";
 
 export function renderEngineState(engine: Engine, container: HTMLElement, ctx: RenderContext): void {
   const state = engine.getState();
-  const rootLabel = state.projection.meta?.label ?? "Root";
+  const rootLabel = state.projection.meta?.label ?? state.projection.root.meta?.label ?? "Root";
   const rootEl = processNode(
     state.projection.root,
     state.value,
@@ -25,4 +25,3 @@ export function renderEngineState(engine: Engine, container: HTMLElement, ctx: R
   syncFocus(state.cursor, container, ctx);
   updateHUD(state);
 }
-

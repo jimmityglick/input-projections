@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build:cjs": "tsc -p tsconfig.build.json",
-    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:esm": "tsc -p tsconfig.esm.json && node tools/rewrite_esm_imports.js",
     "build": "npm run build:cjs && npm run build:esm",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

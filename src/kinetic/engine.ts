@@ -185,7 +185,7 @@ function step(state: State, action: Action): State {
   const applied = applyAction(state, action);
   const normalizedValue = normalizeValue(state.projection.root, applied.value, state.value);
   const sigma = judge(state.projection, normalizedValue);
-  const cursor = normalizeCursor(state.projection, normalizedValue, applied.cursorRequest);
+  const cursor = normalizeCursor(state.projection, normalizedValue, applied.cursorRequest ?? state.cursor);
   return {
     projection: state.projection,
     value: normalizedValue,
