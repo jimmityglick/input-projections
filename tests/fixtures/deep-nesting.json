@@ -1,0 +1,70 @@
+{
+  "version": "1.0.0",
+  "root": {
+    "kind": "Struct",
+    "meta": { "label": "Deep Nesting" },
+    "fields": {
+      "level1": {
+        "kind": "Struct",
+        "meta": { "label": "Level 1" },
+        "fields": {
+          "level2": {
+            "kind": "Struct",
+            "meta": { "label": "Level 2" },
+            "fields": {
+              "level3": {
+                "kind": "Struct",
+                "meta": { "label": "Level 3" },
+                "fields": {
+                  "items": {
+                    "kind": "List",
+                    "meta": { "label": "Items" },
+                    "maxItems": 4,
+                    "uniqueItems": true,
+                    "item": {
+                      "kind": "Struct",
+                      "meta": { "label": "Item" },
+                      "required": ["key"],
+                      "fields": {
+                        "key": {
+                          "kind": "Scalar",
+                          "meta": { "label": "Key" },
+                          "scalar": { "type": "string", "minLength": 1 }
+                        },
+                        "value": {
+                          "kind": "Union",
+                          "meta": { "label": "Value" },
+                          "discriminator": "kind",
+                          "default": "text",
+                          "variants": {
+                            "text": {
+                              "kind": "Scalar",
+                              "meta": { "label": "Text" },
+                              "scalar": { "type": "string" }
+                            },
+                            "number": {
+                              "kind": "Scalar",
+                              "meta": { "label": "Number" },
+                              "scalar": { "type": "number", "min": 0 }
+                            },
+                            "ref": {
+                              "kind": "Reference",
+                              "meta": { "label": "Reference" },
+                              "target": "Entity",
+                              "format": { "minLength": 3 }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

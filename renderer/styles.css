@@ -1,0 +1,84 @@
+:root {
+  --inspector-border: rgba(0, 0, 0, 0.18);
+  --inspector-muted: rgba(0, 0, 0, 0.65);
+  --inspector-invalid: #b71c1c;
+  --inspector-incomplete: #8a6d00;
+}
+
+#app-controls {
+  margin-bottom: 1rem;
+}
+
+.node {
+  border: 1px solid var(--inspector-border);
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.node > .node-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.node .node-label {
+  font-weight: 600;
+}
+
+.node .node-path {
+  font-size: 0.8rem;
+  color: var(--inspector-muted);
+}
+
+.judgment-invalid {
+  border-color: color-mix(in srgb, var(--inspector-invalid) 35%, var(--inspector-border));
+}
+
+.judgment-incomplete {
+  border-color: color-mix(in srgb, var(--inspector-incomplete) 40%, var(--inspector-border));
+}
+
+small.error {
+  display: block;
+  color: var(--inspector-invalid);
+}
+
+.control-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.control-row button.clear {
+  padding: 0.25rem 0.6rem;
+  line-height: 1;
+}
+
+.list-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.list-item > .item-body {
+  min-width: 0;
+}
+
+.hud {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hud pre {
+  margin: 0;
+  max-height: 360px;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 0.75rem;
+  border-radius: 6px;
+}

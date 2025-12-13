@@ -17,7 +17,15 @@ export type { ValuePath, ProjectionPath, ProjectionPathSegment } from "./shared/
 export type { ParseIssue, Issue } from "./shared/issues";
 
 export type { ProjectionDefinition } from "./static/schema-types";
-export type { CompiledProjection } from "./static/compile";
+export type {
+  CompiledListNode,
+  CompiledNode,
+  CompiledProjection,
+  CompiledReferenceNode,
+  CompiledScalarNode,
+  CompiledStructNode,
+  CompiledUnionNode,
+} from "./static/compile";
 
 export type { Judgment } from "./logic/judgment";
 export type { Sigma } from "./logic/judge";

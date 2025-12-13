@@ -258,6 +258,28 @@ HUD updates must never block form interaction.
 ### Phase 2: Primitives
 
 * Scalar renderer per table
+
+---
+
+## 13. Local Development (Reference Implementation)
+
+This repository includes a reference implementation of the Renderer under `renderer/`.
+
+Commands:
+
+1. Build the Engine (ESM output used by the browser renderer):
+   - `npm run build:esm`
+
+2. Start the renderer dev server:
+   - `npm run renderer:dev`
+
+Then open one of the test harness pages:
+
+- `/` (dropdown to switch fixtures)
+- `/purchase-order.html`
+- `/password-confirmation.html`
+- `/price-range-filter.html`
+- `/edge-cases.html`
 * Struct + relation error grouping
 * List with bounds logic
 
@@ -276,4 +298,3 @@ HUD updates must never block form interaction.
 3. List removal reuses DOM without crashing or stale values.
 4. Union switching immediately updates rendered subtree.
 5. Renderer behavior is deterministic and mirrors Engine state exactly.
-

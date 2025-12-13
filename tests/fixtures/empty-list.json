@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "root": {
+    "kind": "Struct",
+    "meta": { "label": "Empty List" },
+    "fields": {
+      "items": {
+        "kind": "List",
+        "meta": { "label": "Items" },
+        "maxItems": 5,
+        "item": {
+          "kind": "Scalar",
+          "meta": { "label": "Item" },
+          "scalar": { "type": "string" }
+        }
+      }
+    }
+  }
+}
+
