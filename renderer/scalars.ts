@@ -2,7 +2,7 @@ import type { EngineValue, Sigma } from "../dist/esm/index.js";
 import type { CompiledReferenceNode, CompiledScalarNode } from "../dist/esm/index.js";
 import type { RenderContext } from "./types";
 import { getOrCreate } from "./cache";
-import { createErrorElements, issuesForProjectionPath } from "./errors";
+import { createErrorElements, hasRelatedIssueForProjectionPath, issuesForProjectionPath } from "./errors";
 import {
   nodeIdFromProjectionPath,
   parseProjectionPath,
@@ -89,6 +89,10 @@ function renderTextLike(
   const pathEl = header.querySelector<HTMLElement>(':scope > [data-role="path"]')!;
   labelEl.htmlFor = textEl.id;
   labelEl.textContent = nodeMeta?.label ?? "Value";
+  const hasRelated = hasRelatedIssueForProjectionPath(sigma, projectionPathString);
+  labelEl.classList.toggle("has-related-issue", hasRelated);
+  if (hasRelated) labelEl.title = "Related constraint failed";
+  else labelEl.removeAttribute("title");
   pathEl.textContent = projectionPathString;
 
   const hintEl = wrapper.querySelector<HTMLElement>(':scope > [data-role="hint"]')!;

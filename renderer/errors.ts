@@ -13,6 +13,18 @@ export function issuesForProjectionPath(sigma: Sigma, projectionPathString: stri
   return out;
 }
 
+export function hasRelatedIssueForProjectionPath(sigma: Sigma, projectionPathString: string): boolean {
+  for (const issue of sigma.issues) {
+    if (issue.code !== "relation_failed") continue;
+    const related = issue.relatedProjectionPaths;
+    if (!related) continue;
+    for (const rp of related) {
+      if (projectionPathToString(rp) === projectionPathString) return true;
+    }
+  }
+  return false;
+}
+
 export function createErrorElements(issues: readonly Issue[], baseId: string): HTMLElement[] {
   return issues.map((issue, idx) => {
     const el = document.createElement("small");

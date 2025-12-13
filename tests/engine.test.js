@@ -75,3 +75,63 @@ test("engine scenarios", async (t) => {
     }
   }
 });
+
+test("relation issues include related field paths", () => {
+  const projection = readJson(path.join(fixturesDir, "password-confirmation.json"));
+  const engine = createEngine(projection);
+
+  engine.dispatch({ type: "SetScalar", at: ["password"], value: "abc12345" });
+  const state = engine.dispatch({ type: "SetScalar", at: ["confirm_password"], value: "zzz99999" });
+
+  const relationIssues = state.sigma.issues.filter((i) => i.code === "relation_failed");
+  assert.equal(relationIssues.length, 1);
+  const issue = relationIssues[0];
+
+  assert.deepEqual(issue.relatedProjectionPaths, [
+    [{ type: "Field", name: "password" }],
+    [{ type: "Field", name: "confirm_password" }],
+  ]);
+  assert.deepEqual(issue.relatedValuePaths, [["password"], ["confirm_password"]]);
+});
+
+test("relation related paths are absolute (root-relative)", () => {
+  const projection = {
+    version: "1.0.0",
+    root: {
+      kind: "Struct",
+      fields: {
+        account: {
+          kind: "Struct",
+          fields: {
+            password: { kind: "Scalar", required: true, scalar: { type: "string" } },
+            confirm_password: { kind: "Scalar", required: true, scalar: { type: "string" } },
+          },
+          required: ["password", "confirm_password"],
+          relations: [{ op: "eq", left: "password", right: "confirm_password", label: "Passwords must match" }],
+        },
+      },
+      required: ["account"],
+    },
+  };
+
+  const engine = createEngine(projection);
+  engine.dispatch({ type: "SetScalar", at: ["account", "password"], value: "abc12345" });
+  const state = engine.dispatch({ type: "SetScalar", at: ["account", "confirm_password"], value: "zzz99999" });
+
+  // Note: sigma.issues can include the same Issue object multiple times due to parent aggregation.
+  const relationIssues = state.sigma.issues.filter((i) => i.code === "relation_failed");
+  const uniqueRelationIssues = [...new Set(relationIssues)];
+  assert.equal(uniqueRelationIssues.length, 1);
+  const issue = uniqueRelationIssues[0];
+
+  // Issue is reported at the Struct that declared the relation (the nested struct).
+  assert.deepEqual(issue.projectionPath, [{ type: "Field", name: "account" }]);
+  assert.deepEqual(issue.valuePath, ["account"]);
+
+  // Related paths are absolute/root-relative, not just ["password"].
+  assert.deepEqual(issue.relatedProjectionPaths, [
+    [{ type: "Field", name: "account" }, { type: "Field", name: "password" }],
+    [{ type: "Field", name: "account" }, { type: "Field", name: "confirm_password" }],
+  ]);
+  assert.deepEqual(issue.relatedValuePaths, [["account", "password"], ["account", "confirm_password"]]);
+});

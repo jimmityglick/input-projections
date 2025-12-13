@@ -15,4 +15,8 @@ export type Issue = {
   message: string;
   projectionPath: ProjectionPath;
   valuePath: ValuePath;
+  // Optional: used by renderers to mark additional fields as being involved in an issue
+  // without duplicating the issue itself.
+  relatedProjectionPaths?: ProjectionPath[];
+  relatedValuePaths?: ValuePath[];
 };

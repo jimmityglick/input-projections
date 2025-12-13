@@ -1,6 +1,7 @@
 import type { Issue } from "../shared/issues";
 import type { EngineValue } from "../shared/json";
 import type { ProjectionPath, ValuePath } from "../shared/paths";
+import { appendProjectionPath, appendValuePath } from "../shared/paths";
 import type { Judgment } from "./judgment";
 import type { Relation } from "../static/schema-types";
 
@@ -9,12 +10,20 @@ function mkIssue(
   projectionPath: ProjectionPath,
   valuePath: ValuePath,
 ): Issue {
+  const leftProjectionPath = appendProjectionPath(projectionPath, { type: "Field", name: rel.left });
+  const rightProjectionPath = appendProjectionPath(projectionPath, { type: "Field", name: rel.right });
+  const leftValuePath = appendValuePath(valuePath, rel.left);
+  const rightValuePath = appendValuePath(valuePath, rel.right);
+
   return {
     severity: "error",
     code: "relation_failed",
     message: rel.label,
     projectionPath,
     valuePath,
+    relatedProjectionPaths:
+      rel.left === rel.right ? [leftProjectionPath] : [leftProjectionPath, rightProjectionPath],
+    relatedValuePaths: rel.left === rel.right ? [leftValuePath] : [leftValuePath, rightValuePath],
   };
 }
 

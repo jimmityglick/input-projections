@@ -347,6 +347,12 @@ Structs support cross-field validation via an optional `relations` array. Each *
     | `lte`    | left <= right            |
 
 * **Evaluation:** Relations are evaluated only when both operand fields are present and individually valid. A missing or invalid operand does not cause the relation to fail—it is skipped.
+* **Failure Reporting (Normative):** When a relation evaluates to False, the Engine MUST emit an Issue with:
+    * `code: "relation_failed"`
+    * `message` equal to the Relation’s `label`
+    * `projectionPath` / `valuePath` pointing at the Struct node that declared the relation
+    * `relatedProjectionPaths`: A list containing the absolute (root-relative) paths to the `left` and `right` operand nodes (deduplicated if `left === right`).
+    * `relatedValuePaths`: A list containing the absolute (root-relative) paths to the `left` and `right` operand values (deduplicated if `left === right`).
 
 ### Other Constraints
 

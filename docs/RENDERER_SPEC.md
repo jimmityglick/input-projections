@@ -156,7 +156,7 @@ Notes:
 * **Missing (`undefined`)** and **null** are distinct.
 * Empty string ≠ missing.
 * Checkbox has no missing state in v1.
-* Optional null scalars MUST support both `Unset` and `SetScalar(null)` via UI.
+* Null scalars MUST support both `Unset` and `SetScalar(null)` via UI; whether `Unset` yields an issue depends on requiredness in the current active subtree.
 
 ---
 
@@ -288,7 +288,7 @@ Then open one of the test harness pages:
 - `/password-confirmation.html`
 - `/price-range-filter.html`
 - `/edge-cases.html`
-* Struct + relation error grouping
+* Struct + relation error grouping (message at Struct + indicators on related fields)
 * List with bounds logic
 
 ### Phase 3: Integration
