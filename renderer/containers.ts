@@ -223,6 +223,11 @@ export function renderUnion(
       return;
     }
     ctx.dispatch({ type: "SelectVariant", at, variantKey: target.value });
+
+    const variantNode = node.variants[target.value];
+    if (variantNode?.kind === "Scalar" && variantNode.scalar.type === "null") {
+      ctx.dispatch({ type: "SetScalar", at: [...at, "data"], value: null });
+    }
   };
 
   reconcileChildren(controls, [select]);
@@ -381,6 +386,8 @@ export function renderList(
   resetBtn.type = "button";
   resetBtn.dataset.role = "reset-list";
   resetBtn.textContent = "Clear list";
+  // Secondary action: keep clickable, but remove from sequential keyboard navigation (Tab order).
+  resetBtn.tabIndex = -1;
   resetBtn.disabled = arr.length === 0;
   resetBtn.onclick = () => {
     const vpStr = addBtn.dataset.valuePath;
@@ -426,6 +433,8 @@ export function renderList(
     removeBtn.dataset.projectionPath = projectionPathString;
     removeBtn.dataset.valuePath = listVpStr;
     removeBtn.dataset.index = String(i);
+    // Secondary action: keep clickable, but remove from sequential keyboard navigation (Tab order).
+    removeBtn.tabIndex = -1;
     removeBtn.disabled = typeof node.minItems === "number" ? arr.length <= node.minItems : false;
     bindCursorFocus(removeBtn, ctx);
     removeBtn.onclick = () => {

@@ -89,6 +89,8 @@ export function findFirstActionable(root: HTMLElement): HTMLElement | null {
     const html = el;
     if (!(html instanceof HTMLElement)) continue;
     const disabled = (html instanceof HTMLInputElement || html instanceof HTMLSelectElement || html instanceof HTMLButtonElement) && html.disabled;
+    // Respect sequential keyboard navigation: skip elements explicitly removed from tab order.
+    if (html.tabIndex < 0) continue;
     if (!disabled) return html;
   }
   return null;

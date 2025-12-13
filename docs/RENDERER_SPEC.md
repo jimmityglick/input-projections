@@ -137,11 +137,17 @@ This rule is mandatory to avoid stale paths after normalization (e.g., list rein
 | Number      | enum        | `<select>`                      | Blank option dispatches `Unset`             |
 | Number      | no enum     | `<input type="number">`         | Empty input dispatches `Unset`              |
 | Boolean     | any         | `<input type="checkbox">`       | Checked = true, unchecked = false           |
-| Null        | any         | `<input disabled value="null">` | Clear button dispatches `Unset` if optional |
+| Null        | any         | `<input disabled>`              | Shows `null` when set and `(unset)` when missing; “Set null” dispatches `SetScalar(null)`; Clear (“X”) dispatches `Unset` |
 
 #### Explicit Unset
 
 All scalar renderers **except checkbox** MUST provide a Clear (“X”) control that dispatches `Unset`.
+
+Notes:
+
+* “Required” means “missing is an error” (judgment becomes `Incomplete` with `missing_required`).
+* Clear (“X”) always dispatches `Unset` (even for required nodes). Whether that produces an issue depends on whether the node is required in its current context.
+* Some nodes are conditionally required based on Union selection; requiredness is evaluated over the active subtree.
 
 ---
 
@@ -213,7 +219,9 @@ This prevents focus loops.
 ### 10.1 Unions
 
 * Changing discriminator dispatches `SelectVariant`.
+* In v1, the **active** (selected) variant’s payload at `.../data` is required; inactive variants are ignored. Missing active payload produces `missing_required`.
 * Renderer does not manage data pruning.
+* Renderer MAY initialize `data` when a selected variant has a single canonical value (for example, a `null` scalar).
 * New branch renders on next frame.
 
 ### 10.2 Lists

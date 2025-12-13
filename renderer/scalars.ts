@@ -74,6 +74,8 @@ function renderTextLike(
   if (textEl instanceof HTMLSelectElement) bindCursorFocus(textEl, ctx);
 
   if (clearBtn) {
+    // Secondary action: keep clickable, but remove from sequential keyboard navigation (Tab order).
+    clearBtn.tabIndex = -1;
     clearBtn.dataset.valuePath = valuePathString;
     clearBtn.dataset.projectionPath = projectionPathString;
     bindClearButton(clearBtn, ctx);
@@ -331,7 +333,7 @@ export function renderScalar(
     document.createElement("input")) as HTMLInputElement;
   input.type = "text";
   input.disabled = true;
-  input.value = "null";
+  input.value = value === null ? "null" : "(unset)";
 
   const buttons = (controlRow.querySelector("div[data-role=\"buttons\"]") ??
     document.createElement("div")) as HTMLDivElement;
