@@ -62,6 +62,14 @@ test("engine scenarios", async (t) => {
           if (exp && "value" in exp) {
             assert.deepEqual(state.value, normalizeExpectedValue(exp.value));
           }
+          if (exp && exp.cursor) {
+            if (exp.cursor.valuePath) {
+              assert.deepEqual(state.cursor.valuePath, exp.cursor.valuePath);
+            }
+            if (exp.cursor.projectionPath) {
+              assert.deepEqual(state.cursor.projectionPath, exp.cursor.projectionPath);
+            }
+          }
         }
       });
     }

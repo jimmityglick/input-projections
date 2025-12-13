@@ -52,6 +52,27 @@
         { "judgment": "Invalid" },
         { "judgment": "Valid" }
       ]
+    },
+    {
+      "name": "cursor preserved on SetScalar",
+      "projection": {
+        "version": "1.0.0",
+        "root": {
+          "kind": "Struct",
+          "fields": {
+            "fieldA": { "kind": "Scalar", "scalar": { "type": "string" } },
+            "fieldB": { "kind": "Scalar", "scalar": { "type": "string" } }
+          }
+        }
+      },
+      "steps": [
+        { "type": "MoveCursor", "toProjectionPath": [{"type": "Field", "name": "fieldB"}], "toValuePath": ["fieldB"] },
+        { "type": "SetScalar", "at": ["fieldB"], "value": "test" }
+      ],
+      "expect": [
+        { "cursor": { "valuePath": ["fieldB"] } },
+        { "cursor": { "valuePath": ["fieldB"] }, "value": { "fieldB": "test" } }
+      ]
     }
   ]
 }
