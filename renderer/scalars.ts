@@ -635,19 +635,23 @@ export function renderScalarCell(
       ctx.dispatch({ type: "SetScalar", at: vp, value: target.value });
     };
 
-    const clearBtn = (row.querySelector("button.grid-cell-clear") ??
-      document.createElement("button")) as HTMLButtonElement;
-    clearBtn.type = "button";
-    clearBtn.className = "grid-cell-clear";
-    clearBtn.textContent = "×";
-    clearBtn.setAttribute("aria-label", "Clear (Unset)");
-    clearBtn.tabIndex = -1;
-    clearBtn.dataset.valuePath = valuePathString;
-    clearBtn.dataset.projectionPath = projectionPathString;
-    clearBtn.disabled = value === undefined;
-    bindClearButton(clearBtn, ctx);
+    const rowChildren: HTMLElement[] = [input];
+    if (node.meta?.clearable) {
+      const clearBtn = (row.querySelector("button.grid-cell-clear") ??
+        document.createElement("button")) as HTMLButtonElement;
+      clearBtn.type = "button";
+      clearBtn.className = "grid-cell-clear";
+      clearBtn.textContent = "×";
+      clearBtn.setAttribute("aria-label", "Clear (Unset)");
+      clearBtn.tabIndex = -1;
+      clearBtn.dataset.valuePath = valuePathString;
+      clearBtn.dataset.projectionPath = projectionPathString;
+      clearBtn.disabled = value === undefined;
+      bindClearButton(clearBtn, ctx);
+      rowChildren.push(clearBtn);
+    }
 
-    reconcileChildren(row, [input, clearBtn]);
+    reconcileChildren(row, rowChildren);
 
     const errorEls = renderCellErrorsInto(input, sigma, projectionPathString, idBase, judgment);
     reconcileChildren(stack, [row, ...errorEls]);
@@ -837,19 +841,23 @@ export function renderReferenceCell(
     ctx.dispatch({ type: "SetScalar", at: vp, value: target.value });
   };
 
-  const clearBtn = (row.querySelector("button.grid-cell-clear") ??
-    document.createElement("button")) as HTMLButtonElement;
-  clearBtn.type = "button";
-  clearBtn.className = "grid-cell-clear";
-  clearBtn.textContent = "×";
-  clearBtn.setAttribute("aria-label", "Clear (Unset)");
-  clearBtn.tabIndex = -1;
-  clearBtn.dataset.valuePath = valuePathString;
-  clearBtn.dataset.projectionPath = projectionPathString;
-  clearBtn.disabled = value === undefined;
-  bindClearButton(clearBtn, ctx);
+  const rowChildren: HTMLElement[] = [input];
+  if (node.meta?.clearable) {
+    const clearBtn = (row.querySelector("button.grid-cell-clear") ??
+      document.createElement("button")) as HTMLButtonElement;
+    clearBtn.type = "button";
+    clearBtn.className = "grid-cell-clear";
+    clearBtn.textContent = "×";
+    clearBtn.setAttribute("aria-label", "Clear (Unset)");
+    clearBtn.tabIndex = -1;
+    clearBtn.dataset.valuePath = valuePathString;
+    clearBtn.dataset.projectionPath = projectionPathString;
+    clearBtn.disabled = value === undefined;
+    bindClearButton(clearBtn, ctx);
+    rowChildren.push(clearBtn);
+  }
 
-  reconcileChildren(row, [input, clearBtn]);
+  reconcileChildren(row, rowChildren);
 
   const errorEls = renderCellErrorsInto(input, sigma, projectionPathString, idBase, judgment);
   reconcileChildren(stack, [row, ...errorEls]);

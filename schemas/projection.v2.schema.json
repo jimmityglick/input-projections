@@ -21,6 +21,7 @@
         "label": { "type": "string" },
         "description": { "type": "string" },
         "hint": { "type": "string" },
+        "clearable": { "type": "boolean" },
         "examples": { "type": "array", "items": {} },
         "tags": { "type": "array", "items": { "type": "string" } }
       }

@@ -84,8 +84,13 @@ function pruneListValue(node: Extract<CompiledNode, { kind: "List" }>, value: En
   const prevArr = isEngineArray(prev) ? prev : undefined;
   const out: EngineArray = value.slice(0, node.maxItems);
   let changed = out.length !== value.length;
+
+  // When list size changed, items may have shifted indices. Don't pass prev items
+  // to avoid incorrect comparisons (e.g., union variant mismatch clearing data).
+  const sizeChanged = prevArr === undefined || prevArr.length !== out.length;
+
   for (let i = 0; i < out.length; i += 1) {
-    const prevItem = prevArr ? prevArr[i] : undefined;
+    const prevItem = sizeChanged ? undefined : prevArr[i];
     const nextItem = normalizeNode(node.item, out[i], prevItem);
     if (nextItem !== out[i]) {
       out[i] = nextItem;

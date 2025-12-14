@@ -108,7 +108,7 @@ function applyAction(state: State, action: Action): { value: EngineValue; cursor
 
   if (action.type === "SelectVariant") {
     // `at` is expected to be the Union container's value path.
-    // We set `at + [discriminator]` and clear `data` during normalization.
+    // We set `at + [discriminator]` and explicitly clear `data` when variant changes.
     // Best-effort: if union node can't be found, no-op.
     const unionObj = getAt(state.value, action.at);
     if (unionObj !== undefined && (typeof unionObj !== "object" || Array.isArray(unionObj))) return { value: state.value };
@@ -154,7 +154,20 @@ function applyAction(state: State, action: Action): { value: EngineValue; cursor
       return { value: state.value };
     }
     if (node.kind !== "Union") return { value: state.value };
-    const next = setAt(state.value, [...action.at, node.discriminator], action.variantKey);
+
+    // Check if variant is actually changing - if so, clear data
+    const currentObj = getAt(state.value, action.at);
+    const currentDisc =
+      currentObj !== undefined && typeof currentObj === "object" && !Array.isArray(currentObj)
+        ? (currentObj as Record<string, EngineValue>)[node.discriminator]
+        : undefined;
+    const currentVariant = typeof currentDisc === "string" ? currentDisc : node.default;
+
+    let next = setAt(state.value, [...action.at, node.discriminator], action.variantKey);
+    // Clear data when switching to a different variant
+    if (currentVariant !== action.variantKey) {
+      next = unsetAt(next, [...action.at, "data"]);
+    }
     return { value: next, cursorRequest: { projectionPath: state.cursor.projectionPath, valuePath: [...action.at, node.discriminator] } };
   }
 

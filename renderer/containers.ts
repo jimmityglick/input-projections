@@ -608,7 +608,7 @@ function renderListAsTable(
           reconcileChildren(td, []);
         }
       } else if (col.type === "discriminator") {
-        // Union discriminator select
+        // Union discriminator select - reuse existing elements to preserve focus/click state
         const unionProjectionPath: ProjectionPath = [...itemProjectionPath, { type: "Field", name: col.unionFieldName }];
         const unionProjectionPathStr = projectionPathToString(unionProjectionPath);
         const discValuePath: ValuePath = [...valuePath, i, col.unionFieldName, col.unionNode.discriminator];
@@ -617,28 +617,37 @@ function renderListAsTable(
         const nodeSigma = sigma.byProjectionPath.get(unionProjectionPathStr);
         const cellJudgment = nodeSigma?.judgment ?? "Valid";
 
-        const cellWrapper = document.createElement("div");
+        // Reuse or create wrapper
+        const cellWrapper = (td.querySelector<HTMLDivElement>(":scope > .grid-cell") ??
+          document.createElement("div")) as HTMLDivElement;
         cellWrapper.className = "grid-cell";
         setJudgmentClasses(cellWrapper, cellJudgment);
         cellWrapper.dataset.projectionPath = unionProjectionPathStr;
         cellWrapper.dataset.valuePath = discValuePathStr;
 
-        const stack = document.createElement("div");
+        // Reuse or create stack
+        const stack = (cellWrapper.querySelector<HTMLDivElement>(':scope > [data-role="stack"]') ??
+          document.createElement("div")) as HTMLDivElement;
         stack.dataset.role = "stack";
         stack.className = "grid-cell-stack";
 
-        const select = document.createElement("select");
+        // Reuse or create select
+        const select = (stack.querySelector<HTMLSelectElement>(":scope > select") ??
+          document.createElement("select")) as HTMLSelectElement;
         select.className = "grid-cell-input";
         select.dataset.valuePath = valuePathToString([...valuePath, i, col.unionFieldName]);
         select.dataset.projectionPath = unionProjectionPathStr;
         bindCursorFocus(select, ctx);
 
+        // Reconcile options
+        const desiredOptions: HTMLOptionElement[] = [];
         for (const variantKey of col.unionNode.variantOrder) {
           const opt = document.createElement("option");
           opt.value = variantKey;
           opt.textContent = variantKey;
-          select.appendChild(opt);
+          desiredOptions.push(opt);
         }
+        reconcileChildren(select, desiredOptions);
         select.value = selectedVariant ?? "";
 
         select.onchange = (e) => {
@@ -649,14 +658,12 @@ function renderListAsTable(
           ctx.dispatch({ type: "SelectVariant", at: vp, variantKey: target.value });
         };
 
-        stack.appendChild(select);
-
         // Show union-level errors
         const issues = issuesForProjectionPath(sigma, unionProjectionPathStr);
         const errorEls = createErrorElements(issues, `${unionProjectionPathStr.replaceAll("/", "_")}_disc`);
-        for (const el of errorEls) stack.appendChild(el);
+        reconcileChildren(stack, [select, ...errorEls]);
 
-        cellWrapper.appendChild(stack);
+        reconcileChildren(cellWrapper, [stack]);
         reconcileChildren(td, [cellWrapper]);
       } else {
         // Variant field cell
