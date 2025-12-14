@@ -35,8 +35,12 @@ export function applyPatch(state: PatchState, newVNode: VNode): void {
     let mountPoint = state.container.querySelector<HTMLElement>('[data-role="vdom-root"]');
     if (!mountPoint) {
       mountPoint = document.createElement("div");
-      mountPoint.setAttribute("data-role", "vdom-root");
-      state.container.appendChild(mountPoint);
+      // Keep `data-role` in the dataset so `toVNode(...)` represents it as `data.dataset.role`
+      // and patching doesn't remove it via datasetModule.
+      mountPoint.dataset.role = "vdom-root";
+      // Ensure we don't accidentally accumulate multiple root mounts if the page already has
+      // stale content from previous renderer instances (e.g., fixture switches).
+      state.container.replaceChildren(mountPoint);
     }
     state.vnode = patch(toVNode(mountPoint), newVNode);
   } else {

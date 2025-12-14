@@ -274,4 +274,3 @@ Manual UX checks (high risk):
 - Centralized event delegation for all controls.
 - Optional per-node “component” abstractions to reduce duplication (e.g., shared text-like control view).
 - Add minimal headless DOM tests (optional) for regression-prone behaviors (unset/clear, focus sync).
-

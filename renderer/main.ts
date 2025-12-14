@@ -7,11 +7,9 @@ import { generateDemoValue } from "./demo_data";
 type RendererMode = "imperative" | "snabbdom";
 
 function getRendererMode(): RendererMode {
-  const params = new URLSearchParams(window.location.search);
-  const queryMode = params.get("renderer");
-  if (queryMode === "snabbdom") return "snabbdom";
   const stored = localStorage.getItem("renderer");
   if (stored === "snabbdom") return "snabbdom";
+  if (stored === "imperative") return "imperative";
   return "imperative";
 }
 
@@ -171,8 +169,20 @@ function mountControls(
   const rendererInfo = document.createElement("p");
   rendererInfo.className = "secondary";
   const modeLabel = state.rendererMode === "snabbdom" ? "snabbdom (VDOM)" : "imperative";
-  const toggleLink = state.rendererMode === "snabbdom" ? "?renderer=imperative" : "?renderer=snabbdom";
-  rendererInfo.innerHTML = `Renderer: <strong>${modeLabel}</strong> — <a href="${toggleLink}">switch</a>`;
+  rendererInfo.append("Renderer: ");
+  const strong = document.createElement("strong");
+  strong.textContent = modeLabel;
+  rendererInfo.append(strong, " — ");
+  const switchLink = document.createElement("a");
+  switchLink.href = "#";
+  switchLink.textContent = "switch";
+  switchLink.onclick = (e) => {
+    e.preventDefault();
+    const next: RendererMode = state.rendererMode === "snabbdom" ? "imperative" : "snabbdom";
+    localStorage.setItem("renderer", next);
+    window.location.reload();
+  };
+  rendererInfo.appendChild(switchLink);
 
   form.append(grid, seedRow, pages, rendererInfo);
   container.replaceChildren(form);

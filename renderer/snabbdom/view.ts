@@ -122,5 +122,8 @@ export function viewEngineState(state: State, ctx: VDOMContext): VNode {
     label: rootLabel,
   });
 
-  return h("div", { attrs: { "data-role": "vdom-root" } }, rootVNode ? [rootVNode] : []);
+  // Use dataset (not attrs) so `toVNode(...)` round-trips `data-*` consistently.
+  // Otherwise, datasetModule will delete `data-role` during patch init and we end up
+  // re-mounting additional roots on fixture changes.
+  return h("div", { dataset: { role: "vdom-root" } }, rootVNode ? [rootVNode] : []);
 }
