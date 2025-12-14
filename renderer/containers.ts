@@ -565,18 +565,17 @@ function renderListAsTable(
 
     // For union columns, get the union value and selected variant
     let unionObj: Record<string, EngineValue> = {};
+    let unionValue: EngineValue = undefined;
     let selectedVariant: string | undefined;
     if (hasUnion) {
       const unionCol = columns.find((c) => c.type === "discriminator");
       if (unionCol && unionCol.type === "discriminator") {
-        const unionValue = rowObj[unionCol.unionFieldName];
+        unionValue = rowObj[unionCol.unionFieldName];
         unionObj =
           unionValue !== undefined && typeof unionValue === "object" && unionValue !== null && !Array.isArray(unionValue)
             ? (unionValue as Record<string, EngineValue>)
             : {};
-        selectedVariant = typeof unionObj[unionCol.unionNode.discriminator] === "string"
-          ? (unionObj[unionCol.unionNode.discriminator] as string)
-          : undefined;
+        selectedVariant = selectUnionVariant(unionCol.unionNode, unionValue);
       }
     }
 
@@ -611,19 +610,29 @@ function renderListAsTable(
         // Union discriminator select - reuse existing elements to preserve focus/click state
         const unionProjectionPath: ProjectionPath = [...itemProjectionPath, { type: "Field", name: col.unionFieldName }];
         const unionProjectionPathStr = projectionPathToString(unionProjectionPath);
-        const discValuePath: ValuePath = [...valuePath, i, col.unionFieldName, col.unionNode.discriminator];
+        const unionValuePath: ValuePath = [...valuePath, i, col.unionFieldName];
+        const unionValuePathStr = valuePathToString(unionValuePath);
+        const discValuePath: ValuePath = [...unionValuePath, col.unionNode.discriminator];
         const discValuePathStr = valuePathToString(discValuePath);
 
         const nodeSigma = sigma.byProjectionPath.get(unionProjectionPathStr);
         const cellJudgment = nodeSigma?.judgment ?? "Valid";
 
-        // Reuse or create wrapper
-        const cellWrapper = (td.querySelector<HTMLDivElement>(":scope > .grid-cell") ??
-          document.createElement("div")) as HTMLDivElement;
+        // Cache this cell wrapper using the union field's projection path so engine->DOM focus sync works.
+        // Note: this assumes this projection path is always rendered in table mode for this renderer session.
+        const cellWrapper = getOrCreate(ctx.cache, unionProjectionPathStr, () => {
+          const div = document.createElement("div");
+          div.className = "grid-cell";
+          const stack = document.createElement("div");
+          stack.dataset.role = "stack";
+          stack.className = "grid-cell-stack";
+          div.appendChild(stack);
+          return div;
+        }) as HTMLDivElement;
         cellWrapper.className = "grid-cell";
         setJudgmentClasses(cellWrapper, cellJudgment);
         cellWrapper.dataset.projectionPath = unionProjectionPathStr;
-        cellWrapper.dataset.valuePath = discValuePathStr;
+        cellWrapper.dataset.valuePath = unionValuePathStr;
 
         // Reuse or create stack
         const stack = (cellWrapper.querySelector<HTMLDivElement>(':scope > [data-role="stack"]') ??
@@ -635,7 +644,8 @@ function renderListAsTable(
         const select = (stack.querySelector<HTMLSelectElement>(":scope > select") ??
           document.createElement("select")) as HTMLSelectElement;
         select.className = "grid-cell-input";
-        select.dataset.valuePath = valuePathToString([...valuePath, i, col.unionFieldName]);
+        // The discriminator control is the union's actionable cursor target, so store the discriminator value path.
+        select.dataset.valuePath = discValuePathStr;
         select.dataset.projectionPath = unionProjectionPathStr;
         bindCursorFocus(select, ctx);
 
@@ -659,13 +669,13 @@ function renderListAsTable(
           const target = e.currentTarget as HTMLSelectElement;
           const vpStr = target.dataset.valuePath;
           if (!vpStr) return;
-          const vp = parseValuePath(vpStr);
+          const discVp = parseValuePath(vpStr);
+          const at = discVp.length > 0 ? discVp.slice(0, -1) : [];
           if (target.value === UNSET) {
-            const discVp = [...vp, col.unionNode.discriminator];
             ctx.dispatch({ type: "Unset", at: discVp });
             return;
           }
-          ctx.dispatch({ type: "SelectVariant", at: vp, variantKey: target.value });
+          ctx.dispatch({ type: "SelectVariant", at, variantKey: target.value });
         };
 
         // Show union-level errors
