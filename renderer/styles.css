@@ -146,6 +146,19 @@ small.error {
   gap: 0.15rem;
 }
 
+.grid-cell-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.grid-cell-clear {
+  padding: 0.15rem 0.45rem;
+  line-height: 1;
+  font-size: 0.85rem;
+}
+
 .grid-cell-input {
   width: 100%;
   min-width: 60px;

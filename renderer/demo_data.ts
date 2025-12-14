@@ -31,7 +31,8 @@ export function generateDemoValue(
 }
 
 function generateGridFlatRows(spec: DemoSeedSpec): EngineValue {
-  const rows = spec.kind === "grid" ? spec.rows : 10;
+  const requestedRows = spec.kind === "grid" ? spec.rows : 10;
+  const rows = Math.max(0, Math.min(500, Math.floor(requestedRows)));
   const statuses = ["new", "in_progress", "blocked", "done"];
   const titles = [
     "Fix login bug",
@@ -81,24 +82,30 @@ function generatePurchaseOrder(): EngineValue {
 
 function generatePasswordConfirmation(): EngineValue {
   return {
+    username: "user123",
+    email: "user@example.com",
     password: "SecurePass123!",
-    confirm: "SecurePass123!",
+    confirm_password: "SecurePass123!",
   };
 }
 
 function generatePriceRangeFilter(): EngineValue {
   return {
+    category: "cat_001",
     min_price: 100,
     max_price: 500,
+    min_rating: 1,
+    max_rating: 5,
   };
 }
 
 function generateEventBooking(): EngineValue {
   return {
-    event_id: "EVT-2025-001",
-    attendee_count: 3,
+    event_name: "Quarterly Review",
     start_date: "2025-06-15",
     end_date: "2025-06-17",
+    start_time: "09:00",
+    end_time: "17:00",
   };
 }
 
@@ -114,12 +121,20 @@ function generateFundTransfer(): EngineValue {
 
 function generateJobApplication(): EngineValue {
   return {
-    applicant_name: "John Smith",
-    email: "john.smith@example.com",
-    phone: "+1-555-123-4567",
-    resume_url: "https://example.com/resume.pdf",
-    cover_letter: "I am excited to apply for this position...",
-    years_experience: 5,
-    available_start: "2025-02-01",
+    applicant: {
+      first_name: "John",
+      last_name: "Smith",
+      email: "john.smith@example.com",
+    },
+    salary_expectations: {
+      minimum: 100000,
+      maximum: 150000,
+      ideal: 120000,
+    },
+    availability: {
+      earliest_start: "2025-01-01",
+      latest_start: "2025-02-01",
+    },
+    work_history: [{ company: "Acme Corp", start_year: 2020, end_year: 2024 }],
   };
 }

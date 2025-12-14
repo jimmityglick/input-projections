@@ -613,7 +613,10 @@ export function renderScalarCell(
       return wrapper;
     }
 
-    const input = (stack.querySelector("input") ?? document.createElement("input")) as HTMLInputElement;
+    const row = (stack.querySelector("div.grid-cell-row") ?? document.createElement("div")) as HTMLDivElement;
+    row.className = "grid-cell-row";
+
+    const input = (row.querySelector("input") ?? document.createElement("input")) as HTMLInputElement;
     input.type = "text";
     input.className = "grid-cell-input";
     input.id = `${idBase}-input`;
@@ -622,7 +625,7 @@ export function renderScalarCell(
     bindCursorFocus(input, ctx);
 
     input.value = typeof value === "string" ? value : "";
-    input.placeholder = value === undefined ? "" : "";
+    input.placeholder = value === undefined ? "(unset)" : "";
 
     input.oninput = (e) => {
       const target = e.currentTarget as HTMLInputElement;
@@ -632,8 +635,22 @@ export function renderScalarCell(
       ctx.dispatch({ type: "SetScalar", at: vp, value: target.value });
     };
 
+    const clearBtn = (row.querySelector("button.grid-cell-clear") ??
+      document.createElement("button")) as HTMLButtonElement;
+    clearBtn.type = "button";
+    clearBtn.className = "grid-cell-clear";
+    clearBtn.textContent = "×";
+    clearBtn.setAttribute("aria-label", "Clear (Unset)");
+    clearBtn.tabIndex = -1;
+    clearBtn.dataset.valuePath = valuePathString;
+    clearBtn.dataset.projectionPath = projectionPathString;
+    clearBtn.disabled = value === undefined;
+    bindClearButton(clearBtn, ctx);
+
+    reconcileChildren(row, [input, clearBtn]);
+
     const errorEls = renderCellErrorsInto(input, sigma, projectionPathString, idBase, judgment);
-    reconcileChildren(stack, [input, ...errorEls]);
+    reconcileChildren(stack, [row, ...errorEls]);
     return wrapper;
   }
 
@@ -798,7 +815,10 @@ export function renderReferenceCell(
     return wrapper;
   }
 
-  const input = (stack.querySelector("input") ?? document.createElement("input")) as HTMLInputElement;
+  const row = (stack.querySelector("div.grid-cell-row") ?? document.createElement("div")) as HTMLDivElement;
+  row.className = "grid-cell-row";
+
+  const input = (row.querySelector("input") ?? document.createElement("input")) as HTMLInputElement;
   input.type = "text";
   input.className = "grid-cell-input";
   input.id = `${idBase}-input`;
@@ -807,6 +827,7 @@ export function renderReferenceCell(
   bindCursorFocus(input, ctx);
 
   input.value = typeof value === "string" ? value : "";
+  input.placeholder = value === undefined ? "(unset)" : "";
 
   input.oninput = (e) => {
     const target = e.currentTarget as HTMLInputElement;
@@ -816,7 +837,21 @@ export function renderReferenceCell(
     ctx.dispatch({ type: "SetScalar", at: vp, value: target.value });
   };
 
+  const clearBtn = (row.querySelector("button.grid-cell-clear") ??
+    document.createElement("button")) as HTMLButtonElement;
+  clearBtn.type = "button";
+  clearBtn.className = "grid-cell-clear";
+  clearBtn.textContent = "×";
+  clearBtn.setAttribute("aria-label", "Clear (Unset)");
+  clearBtn.tabIndex = -1;
+  clearBtn.dataset.valuePath = valuePathString;
+  clearBtn.dataset.projectionPath = projectionPathString;
+  clearBtn.disabled = value === undefined;
+  bindClearButton(clearBtn, ctx);
+
+  reconcileChildren(row, [input, clearBtn]);
+
   const errorEls = renderCellErrorsInto(input, sigma, projectionPathString, idBase, judgment);
-  reconcileChildren(stack, [input, ...errorEls]);
+  reconcileChildren(stack, [row, ...errorEls]);
   return wrapper;
 }

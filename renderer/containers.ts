@@ -267,6 +267,7 @@ type ActionableCursor = { projectionPath: ProjectionPath; valuePath: ValuePath }
 function isEligibleForTableView(node: CompiledListNode): boolean {
   if (node.item.kind !== "Struct") return false;
   const structItem = node.item;
+  if (structItem.relations && structItem.relations.length > 0) return false;
   for (const fieldName of structItem.fieldOrder) {
     const field = structItem.fields[fieldName];
     if (field.kind !== "Scalar" && field.kind !== "Reference") return false;
