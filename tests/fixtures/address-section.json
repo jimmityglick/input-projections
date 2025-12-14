@@ -1,0 +1,35 @@
+{
+  "version": "1.0.0",
+  "root": {
+    "id": "address_section",
+    "kind": "Struct",
+    "required": ["line1", "city", "postal_code"],
+    "fields": {
+      "line1": {
+        "id": "address_line1",
+        "kind": "Scalar",
+        "required": true,
+        "scalar": { "type": "string", "minLength": 1 }
+      },
+      "line2": {
+        "id": "address_line2",
+        "kind": "Scalar",
+        "required": false,
+        "scalar": { "type": "string" }
+      },
+      "city": {
+        "id": "address_city",
+        "kind": "Scalar",
+        "required": true,
+        "scalar": { "type": "string", "minLength": 1 }
+      },
+      "postal_code": {
+        "id": "address_postal_code",
+        "kind": "Scalar",
+        "required": true,
+        "scalar": { "type": "string", "pattern": "^[0-9]{5}(-[0-9]{4})?$" }
+      }
+    }
+  }
+}
+

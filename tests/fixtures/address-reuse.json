@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "root": {
+    "id": "address_reuse_root",
+    "kind": "Struct",
+    "required": ["shipping", "billing"],
+    "fields": {
+      "shipping": { "$ref": "address-section.json" },
+      "billing": { "$ref": "address-section.json" }
+    }
+  }
+}
+
