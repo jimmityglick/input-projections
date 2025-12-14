@@ -13,7 +13,8 @@ type FixtureKey =
   | "deep-nesting"
   | "empty-list"
   | "union-all-variants"
-  | "grid-flat-rows";
+  | "grid-flat-rows"
+  | "grid-row-union";
 
 const FIXTURES: { key: FixtureKey; file: string; label: string }[] = [
   { key: "purchase-order", file: "purchase-order.json", label: "purchase-order" },
@@ -23,6 +24,7 @@ const FIXTURES: { key: FixtureKey; file: string; label: string }[] = [
   { key: "fund-transfer", file: "fund-transfer.json", label: "fund-transfer" },
   { key: "job-application", file: "job-application.json", label: "job-application" },
   { key: "grid-flat-rows", file: "grid-flat-rows.json", label: "grid: flat rows" },
+  { key: "grid-row-union", file: "grid-row-union.json", label: "grid: row union" },
   { key: "deep-nesting", file: "deep-nesting.json", label: "edge: deep nesting" },
   { key: "empty-list", file: "empty-list.json", label: "edge: empty list" },
   { key: "union-all-variants", file: "union-all-variants.json", label: "edge: union variants" },
@@ -36,6 +38,7 @@ const FIXTURE_IMPORTERS: Record<string, () => Promise<{ default: ProjectionDefin
   "fund-transfer.json": () => import("../tests/fixtures/fund-transfer.json"),
   "job-application.json": () => import("../tests/fixtures/job-application.json"),
   "grid-flat-rows.json": () => import("../tests/fixtures/grid-flat-rows.json"),
+  "grid-row-union.json": () => import("../tests/fixtures/grid-row-union.json"),
   "deep-nesting.json": () => import("../tests/fixtures/deep-nesting.json"),
   "empty-list.json": () => import("../tests/fixtures/empty-list.json"),
   "union-all-variants.json": () => import("../tests/fixtures/union-all-variants.json"),
@@ -125,7 +128,7 @@ function mountControls(
   seedLabel.textContent = "Seed demo:";
   seedRow.appendChild(seedLabel);
 
-  if (state.selected === "grid-flat-rows") {
+  if (state.selected === "grid-flat-rows" || state.selected === "grid-row-union") {
     // Grid fixture: offer multiple row counts
     for (const rowCount of [10, 100, 500]) {
       const btn = document.createElement("button");
@@ -146,7 +149,7 @@ function mountControls(
   const pages = document.createElement("p");
   pages.className = "secondary";
   pages.innerHTML =
-    'Quick pages: <a href="/purchase-order.html">purchase-order</a>, <a href="/password-confirmation.html">password-confirmation</a>, <a href="/price-range-filter.html">price-range-filter</a>, <a href="/grid-flat-rows.html">grid-flat-rows</a>, <a href="/edge-cases.html">edge-cases</a>';
+    'Quick pages: <a href="/purchase-order.html">purchase-order</a>, <a href="/password-confirmation.html">password-confirmation</a>, <a href="/price-range-filter.html">price-range-filter</a>, <a href="/grid-flat-rows.html">grid-flat-rows</a>, <a href="/grid-row-union.html">grid-row-union</a>, <a href="/edge-cases.html">edge-cases</a>';
 
   form.append(grid, seedRow, pages);
   container.replaceChildren(form);

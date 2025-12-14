@@ -13,6 +13,8 @@ export function generateDemoValue(
   switch (fixtureKey) {
     case "grid-flat-rows":
       return generateGridFlatRows(spec);
+    case "grid-row-union":
+      return generateGridRowUnion(spec);
     case "purchase-order":
       return generatePurchaseOrder();
     case "password-confirmation":
@@ -61,6 +63,72 @@ function generateGridFlatRows(spec: DemoSeedSpec): EngineValue {
       amount: (i * 10) % 1000,
       active: i % 3 === 0,
       owner_id: `user_${(i % 100).toString().padStart(3, "0")}`,
+    });
+  }
+  return arr;
+}
+
+function generateGridRowUnion(spec: DemoSeedSpec): EngineValue {
+  const requestedRows = spec.kind === "grid" ? spec.rows : 10;
+  const rows = Math.max(0, Math.min(500, Math.floor(requestedRows)));
+  const statuses = ["new", "in_progress", "blocked", "done"];
+  const titles = [
+    "Fix login bug",
+    "Update dependencies",
+    "Add user profile",
+    "Refactor API",
+    "Write tests",
+    "Deploy to staging",
+    "Review PR",
+    "Document API",
+    "Optimize queries",
+    "Add dark mode",
+    "Fix memory leak",
+    "Update docs",
+    "Add caching",
+    "Fix styling",
+    "Add validation",
+  ];
+
+  const firstNames = ["Alice", "Bob", "Carol", "Dave", "Eve", "Frank", "Grace", "Henry"];
+  const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis"];
+  const companyNames = [
+    "Acme Corp",
+    "Global Tech",
+    "Swift Solutions",
+    "Prime Industries",
+    "Nova Systems",
+    "Peak Ventures",
+    "Core Dynamics",
+    "Atlas Holdings",
+  ];
+
+  const arr: EngineValue[] = [];
+  for (let i = 0; i < rows; i++) {
+    const isCompany = i % 2 === 1;
+    const entity = isCompany
+      ? {
+          type: "company",
+          data: {
+            company_name: companyNames[i % companyNames.length],
+            contact_email: `contact${i}@${companyNames[i % companyNames.length].toLowerCase().replace(/\s+/g, "")}.com`,
+          },
+        }
+      : {
+          type: "person",
+          data: {
+            first_name: firstNames[i % firstNames.length],
+            last_name: lastNames[i % lastNames.length],
+            email: `${firstNames[i % firstNames.length].toLowerCase()}.${lastNames[i % lastNames.length].toLowerCase()}${i}@example.com`,
+          },
+        };
+
+    arr.push({
+      row_id: `row_${i.toString().padStart(4, "0")}`,
+      title: titles[i % titles.length],
+      status: statuses[i % statuses.length],
+      owner_id: `user_${(i % 100).toString().padStart(3, "0")}`,
+      entity,
     });
   }
   return arr;

@@ -12,6 +12,6 @@ export function syncFocus(cursor: Cursor, container: HTMLElement, ctx: RenderCon
   const target = findFirstActionable(wrapper);
   if (!target) return;
   if (document.activeElement === target) return;
-  target.focus();
+  target.focus({ preventScroll: true });
 }
 

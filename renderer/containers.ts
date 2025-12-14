@@ -1,6 +1,7 @@
 import type { EngineValue, Sigma } from "../dist/esm/index.js";
 import type {
   CompiledListNode,
+  CompiledNode,
   CompiledStructNode,
   CompiledUnionNode,
   ProjectionPath,
@@ -261,18 +262,78 @@ export function renderUnion(
 type ActionableCursor = { projectionPath: ProjectionPath; valuePath: ValuePath } | null;
 
 /**
- * Determines if a List<Struct> is eligible for table view rendering.
- * Eligible when: item is Struct and all Struct fields are Scalar or Reference.
+ * Column definition for table rendering.
+ * Abstracts the differences between flat tables and union tables.
  */
-function isEligibleForTableView(node: CompiledListNode): boolean {
-  if (node.item.kind !== "Struct") return false;
+type TableColumn =
+  | { type: "field"; fieldName: string; node: CompiledNode }
+  | { type: "discriminator"; unionFieldName: string; unionNode: CompiledUnionNode }
+  | { type: "variant"; unionFieldName: string; unionNode: CompiledUnionNode; variantKey: string; fieldName: string; node: CompiledNode };
+
+/**
+ * Build the column model for a table. Returns null if not eligible for table view.
+ */
+function buildTableColumns(node: CompiledListNode): TableColumn[] | null {
+  if (node.item.kind !== "Struct") return null;
   const structItem = node.item;
-  if (structItem.relations && structItem.relations.length > 0) return false;
+  if (structItem.relations && structItem.relations.length > 0) return null;
+
+  const columns: TableColumn[] = [];
+  let unionFieldName: string | undefined;
+  let unionNode: CompiledUnionNode | undefined;
+
   for (const fieldName of structItem.fieldOrder) {
     const field = structItem.fields[fieldName];
-    if (field.kind !== "Scalar" && field.kind !== "Reference") return false;
+
+    if (field.kind === "Scalar" || field.kind === "Reference") {
+      columns.push({ type: "field", fieldName, node: field });
+      continue;
+    }
+
+    if (field.kind === "Union") {
+      // Only one union allowed per row (v1 restriction)
+      if (unionFieldName !== undefined) return null;
+      unionFieldName = fieldName;
+      unionNode = field;
+
+      // Check all variants are Structs with only Scalar/Reference fields
+      for (const variantKey of unionNode.variantOrder) {
+        const variant = unionNode.variants[variantKey];
+        if (variant.kind !== "Struct") return null;
+        if (variant.relations && variant.relations.length > 0) return null;
+        for (const vFieldName of variant.fieldOrder) {
+          const vField = variant.fields[vFieldName];
+          if (vField.kind !== "Scalar" && vField.kind !== "Reference") return null;
+        }
+      }
+
+      // Add discriminator column
+      columns.push({ type: "discriminator", unionFieldName: fieldName, unionNode: field });
+
+      // Add variant columns
+      for (const variantKey of unionNode.variantOrder) {
+        const variant = unionNode.variants[variantKey];
+        if (variant.kind === "Struct") {
+          for (const vFieldName of variant.fieldOrder) {
+            columns.push({
+              type: "variant",
+              unionFieldName: fieldName,
+              unionNode: field,
+              variantKey,
+              fieldName: vFieldName,
+              node: variant.fields[vFieldName],
+            });
+          }
+        }
+      }
+      continue;
+    }
+
+    // Other kinds (List, Struct) make it ineligible
+    return null;
   }
-  return true;
+
+  return columns;
 }
 
 function firstActionableCursor(
@@ -318,11 +379,13 @@ function renderListAsTable(
   judgment: string,
   sigma: Sigma,
   ctx: RenderContext,
+  columns: TableColumn[],
   labelOverride?: string,
 ): HTMLElement {
   const structItem = node.item as CompiledStructNode;
   const listValPathStr = valuePathToString(valuePath);
   const arr = Array.isArray(value) ? (value as EngineValue[]) : [];
+  const hasUnion = columns.some((c) => c.type === "discriminator" || c.type === "variant");
 
   const wrapper = getOrCreate(ctx.cache, projectionPathString, () => {
     const root = document.createElement("div");
@@ -435,12 +498,19 @@ function renderListAsTable(
   const thead = table.querySelector<HTMLTableSectionElement>("thead")!;
   const tbody = table.querySelector<HTMLTableSectionElement>("tbody")!;
 
-  // Header row
+  // Header row - generated from column model
   const desiredHeadCells: HTMLTableCellElement[] = [];
-  for (const fieldName of structItem.fieldOrder) {
+  for (const col of columns) {
     const th = document.createElement("th");
     th.scope = "col";
-    th.textContent = structItem.fields[fieldName].meta?.label ?? fieldName;
+    if (col.type === "field") {
+      th.textContent = col.node.meta?.label ?? col.fieldName;
+    } else if (col.type === "discriminator") {
+      th.textContent = `${col.unionFieldName}.${col.unionNode.discriminator}`;
+    } else {
+      // variant column
+      th.textContent = col.node.meta?.label ? `${col.variantKey}.${col.node.meta.label}` : `${col.variantKey}.${col.fieldName}`;
+    }
     desiredHeadCells.push(th);
   }
   // Actions column
@@ -464,11 +534,11 @@ function renderListAsTable(
     // Cache the entire row structure including cells and remove button
     const tr = getOrCreate(ctx.cache, rowKey, () => {
       const row = document.createElement("tr");
-      // Create cells for each field
-      for (const fieldName of structItem.fieldOrder) {
+      // Create cells for each column
+      for (let colIdx = 0; colIdx < columns.length; colIdx++) {
         const td = document.createElement("td");
         td.className = "grid-table-cell";
-        td.dataset.field = fieldName;
+        td.dataset.colIdx = String(colIdx);
         row.appendChild(td);
       }
       // Create actions cell with remove button
@@ -493,30 +563,140 @@ function renderListAsTable(
         ? (rowValue as Record<string, EngineValue>)
         : {};
 
-    // Update field cells
-    for (const fieldName of structItem.fieldOrder) {
-      const fieldNode = structItem.fields[fieldName];
-      const fieldProjectionPath: ProjectionPath = [...itemProjectionPath, { type: "Field", name: fieldName }];
-      const fieldProjectionPathStr = projectionPathToString(fieldProjectionPath);
-      const fieldValuePath: ValuePath = [...valuePath, i, fieldName];
-      const fieldValuePathStr = valuePathToString(fieldValuePath);
-      const fieldValue = rowObj[fieldName];
+    // For union columns, get the union value and selected variant
+    let unionObj: Record<string, EngineValue> = {};
+    let selectedVariant: string | undefined;
+    if (hasUnion) {
+      const unionCol = columns.find((c) => c.type === "discriminator");
+      if (unionCol && unionCol.type === "discriminator") {
+        const unionValue = rowObj[unionCol.unionFieldName];
+        unionObj =
+          unionValue !== undefined && typeof unionValue === "object" && unionValue !== null && !Array.isArray(unionValue)
+            ? (unionValue as Record<string, EngineValue>)
+            : {};
+        selectedVariant = typeof unionObj[unionCol.unionNode.discriminator] === "string"
+          ? (unionObj[unionCol.unionNode.discriminator] as string)
+          : unionCol.unionNode.default;
+      }
+    }
 
-      const nodeSigma = sigma.byProjectionPath.get(fieldProjectionPathStr);
-      const cellJudgment = nodeSigma?.judgment ?? "Valid";
+    // Update cells based on column model
+    for (let colIdx = 0; colIdx < columns.length; colIdx++) {
+      const col = columns[colIdx];
+      const td = tr.querySelector<HTMLTableCellElement>(`td[data-col-idx="${colIdx}"]`)!;
 
-      const td = tr.querySelector<HTMLTableCellElement>(`td[data-field="${fieldName}"]`)!;
+      if (col.type === "field") {
+        // Simple field cell (Scalar/Reference)
+        const fieldProjectionPath: ProjectionPath = [...itemProjectionPath, { type: "Field", name: col.fieldName }];
+        const fieldProjectionPathStr = projectionPathToString(fieldProjectionPath);
+        const fieldValuePath: ValuePath = [...valuePath, i, col.fieldName];
+        const fieldValuePathStr = valuePathToString(fieldValuePath);
+        const fieldValue = rowObj[col.fieldName];
 
-      if (cellJudgment !== "Inactive") {
-        let cellEl: HTMLElement | null = null;
-        if (fieldNode.kind === "Scalar") {
-          cellEl = renderScalarCell(fieldNode, fieldValue, fieldProjectionPathStr, fieldValuePathStr, cellJudgment, sigma, ctx);
-        } else if (fieldNode.kind === "Reference") {
-          cellEl = renderReferenceCell(fieldNode, fieldValue, fieldProjectionPathStr, fieldValuePathStr, cellJudgment, sigma, ctx);
+        const nodeSigma = sigma.byProjectionPath.get(fieldProjectionPathStr);
+        const cellJudgment = nodeSigma?.judgment ?? "Valid";
+
+        if (cellJudgment !== "Inactive") {
+          let cellEl: HTMLElement | null = null;
+          if (col.node.kind === "Scalar") {
+            cellEl = renderScalarCell(col.node, fieldValue, fieldProjectionPathStr, fieldValuePathStr, cellJudgment, sigma, ctx);
+          } else if (col.node.kind === "Reference") {
+            cellEl = renderReferenceCell(col.node, fieldValue, fieldProjectionPathStr, fieldValuePathStr, cellJudgment, sigma, ctx);
+          }
+          reconcileChildren(td, cellEl ? [cellEl] : []);
+        } else {
+          reconcileChildren(td, []);
         }
-        reconcileChildren(td, cellEl ? [cellEl] : []);
+      } else if (col.type === "discriminator") {
+        // Union discriminator select
+        const unionProjectionPath: ProjectionPath = [...itemProjectionPath, { type: "Field", name: col.unionFieldName }];
+        const unionProjectionPathStr = projectionPathToString(unionProjectionPath);
+        const discValuePath: ValuePath = [...valuePath, i, col.unionFieldName, col.unionNode.discriminator];
+        const discValuePathStr = valuePathToString(discValuePath);
+
+        const nodeSigma = sigma.byProjectionPath.get(unionProjectionPathStr);
+        const cellJudgment = nodeSigma?.judgment ?? "Valid";
+
+        const cellWrapper = document.createElement("div");
+        cellWrapper.className = "grid-cell";
+        setJudgmentClasses(cellWrapper, cellJudgment);
+        cellWrapper.dataset.projectionPath = unionProjectionPathStr;
+        cellWrapper.dataset.valuePath = discValuePathStr;
+
+        const stack = document.createElement("div");
+        stack.dataset.role = "stack";
+        stack.className = "grid-cell-stack";
+
+        const select = document.createElement("select");
+        select.className = "grid-cell-input";
+        select.dataset.valuePath = valuePathToString([...valuePath, i, col.unionFieldName]);
+        select.dataset.projectionPath = unionProjectionPathStr;
+        bindCursorFocus(select, ctx);
+
+        for (const variantKey of col.unionNode.variantOrder) {
+          const opt = document.createElement("option");
+          opt.value = variantKey;
+          opt.textContent = variantKey;
+          select.appendChild(opt);
+        }
+        select.value = selectedVariant ?? "";
+
+        select.onchange = (e) => {
+          const target = e.currentTarget as HTMLSelectElement;
+          const vpStr = target.dataset.valuePath;
+          if (!vpStr) return;
+          const vp = parseValuePath(vpStr);
+          ctx.dispatch({ type: "SelectVariant", at: vp, variantKey: target.value });
+        };
+
+        stack.appendChild(select);
+
+        // Show union-level errors
+        const issues = issuesForProjectionPath(sigma, unionProjectionPathStr);
+        const errorEls = createErrorElements(issues, `${unionProjectionPathStr.replaceAll("/", "_")}_disc`);
+        for (const el of errorEls) stack.appendChild(el);
+
+        cellWrapper.appendChild(stack);
+        reconcileChildren(td, [cellWrapper]);
       } else {
-        reconcileChildren(td, []);
+        // Variant field cell
+        const isActiveVariant = col.variantKey === selectedVariant;
+
+        if (!isActiveVariant) {
+          // Inactive variant: empty cell
+          reconcileChildren(td, []);
+        } else {
+          // Active variant: render the field
+          const variantFieldProjectionPath: ProjectionPath = [
+            ...itemProjectionPath,
+            { type: "Field", name: col.unionFieldName },
+            { type: "Variant", key: col.variantKey },
+            { type: "Field", name: col.fieldName },
+          ];
+          const variantFieldProjectionPathStr = projectionPathToString(variantFieldProjectionPath);
+          const variantFieldValuePath: ValuePath = [...valuePath, i, col.unionFieldName, "data", col.fieldName];
+          const variantFieldValuePathStr = valuePathToString(variantFieldValuePath);
+          const variantData =
+            unionObj.data !== undefined && typeof unionObj.data === "object" && unionObj.data !== null && !Array.isArray(unionObj.data)
+              ? (unionObj.data as Record<string, EngineValue>)
+              : {};
+          const variantFieldValue = variantData[col.fieldName];
+
+          const nodeSigma = sigma.byProjectionPath.get(variantFieldProjectionPathStr);
+          const cellJudgment = nodeSigma?.judgment ?? "Valid";
+
+          if (cellJudgment !== "Inactive") {
+            let cellEl: HTMLElement | null = null;
+            if (col.node.kind === "Scalar") {
+              cellEl = renderScalarCell(col.node, variantFieldValue, variantFieldProjectionPathStr, variantFieldValuePathStr, cellJudgment, sigma, ctx);
+            } else if (col.node.kind === "Reference") {
+              cellEl = renderReferenceCell(col.node, variantFieldValue, variantFieldProjectionPathStr, variantFieldValuePathStr, cellJudgment, sigma, ctx);
+            }
+            reconcileChildren(td, cellEl ? [cellEl] : []);
+          } else {
+            reconcileChildren(td, []);
+          }
+        }
       }
     }
 
@@ -573,9 +753,10 @@ export function renderList(
   ctx: RenderContext,
   labelOverride?: string,
 ): HTMLElement {
-  // Use table view for eligible List<Struct>
-  if (isEligibleForTableView(node)) {
-    return renderListAsTable(node, value, projectionPath, valuePath, projectionPathString, judgment, sigma, ctx, labelOverride);
+  // Use table view for eligible List<Struct> (with or without union)
+  const columns = buildTableColumns(node);
+  if (columns !== null) {
+    return renderListAsTable(node, value, projectionPath, valuePath, projectionPathString, judgment, sigma, ctx, columns, labelOverride);
   }
 
   const wrapper = getOrCreate(ctx.cache, projectionPathString, () => {
