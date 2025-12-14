@@ -576,7 +576,7 @@ function renderListAsTable(
             : {};
         selectedVariant = typeof unionObj[unionCol.unionNode.discriminator] === "string"
           ? (unionObj[unionCol.unionNode.discriminator] as string)
-          : unionCol.unionNode.default;
+          : undefined;
       }
     }
 
@@ -639,8 +639,13 @@ function renderListAsTable(
         select.dataset.projectionPath = unionProjectionPathStr;
         bindCursorFocus(select, ctx);
 
-        // Reconcile options
+        // Reconcile options - include unset placeholder
+        const UNSET = "__unset__";
         const desiredOptions: HTMLOptionElement[] = [];
+        const optUnset = document.createElement("option");
+        optUnset.value = UNSET;
+        optUnset.textContent = "(select variant)";
+        desiredOptions.push(optUnset);
         for (const variantKey of col.unionNode.variantOrder) {
           const opt = document.createElement("option");
           opt.value = variantKey;
@@ -648,13 +653,18 @@ function renderListAsTable(
           desiredOptions.push(opt);
         }
         reconcileChildren(select, desiredOptions);
-        select.value = selectedVariant ?? "";
+        select.value = selectedVariant ?? UNSET;
 
         select.onchange = (e) => {
           const target = e.currentTarget as HTMLSelectElement;
           const vpStr = target.dataset.valuePath;
           if (!vpStr) return;
           const vp = parseValuePath(vpStr);
+          if (target.value === UNSET) {
+            const discVp = [...vp, col.unionNode.discriminator];
+            ctx.dispatch({ type: "Unset", at: discVp });
+            return;
+          }
           ctx.dispatch({ type: "SelectVariant", at: vp, variantKey: target.value });
         };
 
