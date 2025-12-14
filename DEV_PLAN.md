@@ -1,197 +1,250 @@
-# Development Plan: Battle 1 (Grid Flat Rows) + Upgrade A (Table View) + Upgrade C (Deterministic Demo Generator)
+# Development Plan: Battle 2 — Grid Rows With Union (Conditional Columns Per Row)
 
-This plan is the next “climb the mountain” step toward the **data grid from hell** stress test.
+This plan is the next incremental step toward the “data grid from hell” stress test.
 
-Reference docs / older plans:
-- Engine v1 plan (archived): `docs/archive/DEV_PLAN.md`
-- Reference renderer plan (archived): `docs/archive/RENDERER_DEV_PLAN.md`
+Battle 1 is archived at:
+- `docs/archive/DEV_PLAN-2.md`
+
+Battle 2 (this plan):
+- Add a **grid fixture** where each row contains a `Union` that changes the row’s “detail columns”.
+- Upgrade the **table renderer** to support **conditional columns per row** driven by that union.
+- Add **deterministic demo data** seeding for the new fixture so we can test at 10/100/500 rows quickly.
+
+---
+
+## Source Of Truth / Context (Read First)
+
+### Specs + contracts
 - Renderer spec (normative): `docs/RENDERER_SPEC.md`
-- Engine contract: `src/kinetic/engine.ts`
+- Engine contract & actions: `src/kinetic/engine.ts`
+
+### Engine behavior relevant to this battle
+- **Union value model (runtime):** a Union is represented as an object:
+  - discriminator key: `value[discriminator] = <variantKey>`
+  - payload key: `value.data = <payload for selected variant>`
+- **Variant switching clears data:** normalization clears `data` when the selection changes.
+  - See `src/kinetic/normalize.ts` (`shouldClearData` logic in `pruneUnionValue`)
+- **Actions this plan will rely on:**
+  - `SelectVariant` (preferred for changing union selection)
+  - `SetScalar` and `Unset` for cell edits / clear
+  - `ListAdd` and `ListRemove` for row add/remove
+  - `MoveCursor` for focus sync
+
+### Renderer constraints (v1)
+- **Visual truth:** renderer reflects engine state; it does not compute validity.
+- **Inactive nodes MUST NOT render.**
+- **Re-binding rule:** event handlers must not capture stale paths; they must read `dataset.valuePath` at event time.
+- **Identity:** cache keys are projection-path strings; list items may be index-keyed (acceptable in v1).
 
 ---
 
-## Outcome (What “Done” Means)
+## Outcome (Definition of Done)
 
-1. **New fixture:** a “grid-shaped” projection (`List<Struct>`) that validates against `schemas/projection.latest.schema.json`.
-2. **Renderer upgrade:** the reference renderer can render an eligible `List<Struct>` as an HTML `<table>` (columns + rows).
-3. **Dev harness upgrade:** the renderer harness can load a **deterministically generated** initial value for known fixtures (especially the new grid fixture) so we can instantly test 10/100/500 row scenarios without clicking “Add” repeatedly.
+1. New fixture `tests/fixtures/grid-row-union.json` validates against `schemas/projection.latest.schema.json`.
+2. Renderer harness can load it:
+   - selectable in `renderer/main.ts`
+   - quick page `renderer/grid-row-union.html` is available
+3. Renderer can render this fixture in **table mode**, with:
+   - base columns always visible
+   - a per-row union discriminator column (editable)
+   - variant-specific columns that are empty/inactive for non-selected variants
+4. Deterministic seeding exists for `grid-row-union`:
+   - “Seed demo: 10/100/500 rows” creates a mixed dataset (alternating variants)
+5. Manual UX checks pass (no console errors; focus/cursor remains usable after add/remove and variant switching).
 
 ---
 
-## Scope (Explicit)
+## Scope
 
 ### In scope
-- **Battle 1 fixture** (flat rows): list of row structs whose fields are Scalars/References only.
-- **Upgrade A:** “table view” rendering for eligible lists.
-- **Upgrade C:** deterministic generators for known fixtures, wired into the renderer dev UI as a “Seed demo value” (and “Seed N rows”) action.
+- Exactly **one** “row union” per row (keeps column model small and implementable).
+- Union variants are **Structs containing only Scalar/Reference fields** (so we can reuse existing cell renderers).
+- Table-mode column model that supports “variant columns” for a row union.
+- Demo data generator for this new fixture.
 
-### Out of scope (for this milestone)
-- Filtering, column sorting, pagination, virtualization/windowing.
-- Row expansion (“details panels”), nested forms per row, union-driven row shapes.
-- Generic “projection-driven” data synthesis. Generators may be fixture-specific/hard-coded.
-
----
-
-## Battle 1: Fixture — `grid-flat-rows.json`
-
-### Deliverable
-- Add `tests/fixtures/grid-flat-rows.json`
-- Update renderer harness to include it:
-  - `renderer/main.ts` fixture registry + dynamic import mapping
-  - Optionally add a quick HTML page (e.g. `renderer/grid-flat-rows.html`) consistent with existing “quick pages”
-
-### Projection Shape (Target)
-Root is a `List` with `maxItems` large enough to feel “grid-like” (e.g. 200–1000).
-
-- `root.kind = "List"`
-- `root.item.kind = "Struct"`
-- Row fields are **only**:
-  - `Scalar` (string/number/boolean)
-  - `Reference`
-
-### Suggested Columns (Simple, High Coverage)
-Use fields that exercise the renderer’s existing controls:
-- `row_id`: Scalar string, required, pattern (stable primary key)
-- `title`: Scalar string, required, min/max length
-- `status`: Scalar string, enum (select)
-- `amount`: Scalar number, min/max (number input)
-- `active`: Scalar boolean (checkbox)
-- `owner_id`: Reference with `format.pattern` and/or `minLength` (tests “lookup-ish” field without external data)
-
-### Acceptance Criteria (Fixture)
-- `npm run test:schema` passes (fixtures validate).
-- `renderer:dev` can load the fixture.
+### Out of scope
+- Sorting/filtering/pagination/virtualization (Battle 4+).
+- Row expansion panels / nested forms (Battle 3).
+- Relations in the row struct or in the union’s variant structs (relation errors need a row-level surface).
+- Union variants that are non-Struct primitives (Scalar/List/Union nested inside variants).
 
 ---
 
-## Upgrade A: Render Eligible `List<Struct>` as a `<table>`
+## 1) Fixture: `tests/fixtures/grid-row-union.json`
 
-### Goal
-When a List item is a Struct and all of the Struct fields are Scalar/Reference, render as a table:
-- Header row = field labels
-- Body rows = list items
-- Each cell = inline editor for that field (still dispatches to the Engine via ValuePath)
+### Purpose
+Exercise “conditional columns per row”:
+- base columns are always present
+- detail columns come from a Union selection per row
 
-### Eligibility Rule (Strict for v1)
-In `renderer/containers.ts` list rendering:
-- If `node.item.kind !== "Struct"` → keep current “list of item cards” renderer.
-- If `node.item.kind === "Struct"` but any field is not `Scalar` or `Reference` → keep current renderer.
-- Otherwise → table view.
+### Projection shape
+Root:
+- `kind: "List"`
+- `maxItems: 500`
+- `item.kind: "Struct"`
 
-This keeps the change low-risk and makes “grid mode” predictable.
+Row struct fields (suggested):
+- Base fields (Scalar/Reference only):
+  - `row_id` (Scalar string, required, pattern `^row_[0-9]{4}$`)
+  - `title` (Scalar string, required)
+  - `status` (Scalar string enum: `new | in_progress | blocked | done`)
+  - `owner_id` (Reference target `User`, format pattern `^user_[0-9]{3}$`)
+- Row union field:
+  - `entity` (Union)
+    - `discriminator: "type"`
+    - `default: "person"`
+    - variants:
+      - `person`: Struct of scalar/ref fields only
+      - `company`: Struct of scalar/ref fields only
 
-### DOM Structure (Proposed)
-Use a dedicated wrapper element to allow styling without impacting existing list rendering:
+Variant suggestions:
+- `person`:
+  - `first_name` (Scalar string, required, minLength 1)
+  - `last_name` (Scalar string, required, minLength 1)
+  - `email` (Scalar string, optional/required; simple email pattern is fine)
+  - optional `customer_id` (Reference target `Customer`)
+- `company`:
+  - `company_name` (Scalar string, required)
+  - optional `tax_id` (Scalar string, pattern)
+  - optional `contact_email` (Scalar string, pattern)
 
-- Outer: existing list wrapper (preserve list label, Add/Remove, errors)
-- Content: `<table class="grid-table">`
-  - `<thead><tr><th>…</th></tr></thead>`
-  - `<tbody>` with one `<tr>` per list item index
-  - `<td>` per column
+### Fixture rules
+- No `relations` anywhere in this fixture.
+- JSON formatting: 2 spaces, no trailing commas.
 
-### Identity / Cache Strategy
-Preserve renderer invariants:
-- Per `docs/RENDERER_SPEC.md`, **primary cache key remains ProjectionPath String**.
-- List items are still keyed by index-based projection paths (acceptable in v1).
-
-Cells should still use `processNode()` so the scalar/reference controls keep:
-- correct `dataset.valuePath`
-- correct `dataset.projectionPath`
-- correct rebinding behavior after normalization
-
-### Inline Cell Rendering (Recommendation)
-The current scalar/reference renderer outputs a “card-ish” wrapper with label/path/hint.
-In a table cell, that’s noisy and wastes space.
-
-Implement a small “cell mode” to keep the UI usable:
-- Add new renderer functions:
-  - `renderScalarCell(...)`
-  - `renderReferenceCell(...)`
-- These render:
-  - the `<input>`/`<select>` (and clear button where applicable)
-  - the error `<small>` elements
-  - but omit the header/path/hint block
-
-Table view uses cell renderers; non-table view continues using the existing full renderers.
-
-### Styling
-Add CSS rules in `renderer/styles.css` for:
-- `.grid-table` layout and spacing
-- making inputs compact inside cells
-- keeping errors readable but not massive (e.g. smaller font size inside table)
-- sticky header (optional, nice-to-have even in v1)
-
-### Acceptance Criteria (Renderer)
-- With an empty value, the table renders with headers and 0 rows (plus list controls).
-- “Add” adds a new row; editing any cell updates the Engine value and judgment.
-- “Remove” removes the row and focus/cursor is normalized sensibly (no stale paths).
-- No console errors during add/remove/edit cycles.
-
----
-
-## Upgrade C: Deterministic Demo Value Generator (Known Fixtures)
-
-### Goal
-Stop manually building large values via UI interaction.
-
-Add a deterministic generator that can produce a good initial value for a specific fixture.
-This is a **dev harness feature** (not an engine feature): it should not change `src/` engine behavior.
-
-### Design Principles
-- **Deterministic:** same fixture key + same requested size ⇒ identical value.
-- **Fixture-specific:** start with hard-coded generation per fixture key; don’t attempt a universal constraint solver.
-- **Locally valid where practical:** generated values should satisfy required fields and obvious constraints (enum/pattern/min/max).
-- **Scalable:** grid fixture must support N-row generation (10/100/500) without hand editing.
-
-### Proposed Implementation
-Add a module under `renderer/` (e.g. `renderer/demo_data.ts`) exporting:
-
-- `type DemoSeedSpec = { kind: "default" } | { kind: "grid"; rows: number }`
-- `function generateDemoValue(fixtureKey: string, spec?: DemoSeedSpec): EngineValue | null`
-
-Implementation strategy:
-- For the grid fixture, generate an array with `rows` entries, where each entry is a row object:
-  - `row_id = "row_" + i.toString().padStart(4, "0")`
-  - `status = ["new", "in_progress", "blocked", "done"][i % 4]`
-  - `amount = (i * 10) % 1000` (or similar)
-  - `active = i % 3 === 0`
-  - `owner_id = "user_" + (i % 100).toString().padStart(3, "0")`
-- For existing fixtures, generate a small valid “happy path” value (1–3 list items, default union selections, valid reference key format).
-
-### Wiring Into The Renderer Harness
+### Wire into renderer harness
 Update `renderer/main.ts`:
-- Add a new button near “Reset value”:
-  - `Seed demo value`
-  - For the grid fixture, include quick options: `Seed 10 rows`, `Seed 100 rows`, `Seed 500 rows`
-- Button behavior:
-  1. compute `value = generateDemoValue(currentFixture, spec)`
-  2. `engine.reset(value)`
-  3. `renderer.render(engine, app)`
+- Add fixture key `"grid-row-union"` with label `"grid: row union"`
+- Add importer mapping for `../tests/fixtures/grid-row-union.json`
+- Add to quick pages list
 
-### Acceptance Criteria (Generator)
-- Seeding `grid-flat-rows` with 100 rows produces a populated, mostly-valid grid immediately.
-- Seeding is repeatable (reload page → seed 100 rows → same values).
-- Seeding does not require any engine code changes.
+Add quick page:
+- `renderer/grid-row-union.html` matching the pattern of `renderer/grid-flat-rows.html`
 
 ---
 
-## Validation Checklist (Per PR / Per Iteration)
+## 2) Deterministic Demo Data Seeding
 
-Commands:
-- `npm test` (schema + engine tests)
-- `npm run renderer:dev` (manual interaction check)
+### Where
+- `renderer/demo_data.ts` (the deterministic demo generator used by `renderer/main.ts`)
 
-Manual checks:
-- Grid fixture loads and renders in table mode.
-- Add/remove/edit operations keep cursor/focus stable enough to continue editing.
-- Seed buttons work and are deterministic.
+### Requirement
+Implement deterministic generation for fixture key `grid-row-union`:
+- Supports row counts: 10, 100, 500
+- Produces union runtime shape:
+  - `entity: { type: "<variantKey>", data: { ... } }`
+
+### Suggested deterministic pattern
+For row index `i`:
+- Base:
+  - `row_id = "row_" + i.toString().padStart(4, "0")`
+  - `title = titles[i % titles.length]`
+  - `status = statuses[i % statuses.length]`
+  - `owner_id = "user_" + (i % 100).toString().padStart(3, "0")`
+- Variant selection:
+  - `type = i % 2 === 0 ? "person" : "company"`
+- Variant payload:
+  - Person rows: `{ first_name, last_name, email }`
+  - Company rows: `{ company_name, contact_email }`
+
+Update `renderer/main.ts` seed UI:
+- For this fixture, show `Seed demo: 10/100/500 rows` (same as flat grid).
 
 ---
 
-## Follow-Ups After Battle 1 (Not in Scope, But Unblocked)
+## 3) Renderer Upgrade: Table View With Row-Union Columns
 
-Once Battle 1 is stable, the next logical steps toward the full grid stress test are:
-1. **Row-union fixture** (Battle 2): conditional columns per row via `Union`.
-2. **Row-details fixture** (Battle 3): nested Struct/List under each row.
-3. **View transforms:** implement UI-only sort/filter over the visible row indices (do not mutate the engine list order).
+### Current behavior (Battle 1)
+Table view only triggers when the row struct contains **only** Scalar/Reference fields.
+Battle 2 introduces a Union field inside the row, so table view must be extended.
 
+### 3.1 Eligibility rules (v1)
+Implement a strict eligibility check for “row-union table mode”:
+
+Eligible when:
+- list item is a Struct
+- row struct has:
+  - any number of Scalar/Reference fields
+  - exactly one Union field (v1 restriction)
+- the union field:
+  - has variants, and every variant is a Struct
+  - variant struct fields are Scalar/Reference only
+  - no `relations` in row struct or variant structs
+
+If not eligible, fall back to existing list rendering (card/fieldset).
+
+### 3.2 Column model (deterministic)
+Build columns in a deterministic order:
+
+1. Base columns: each row-level Scalar/Reference field in `fieldOrder` (excluding the union field)
+2. Union discriminator column:
+   - header text: `<unionFieldName>.<discriminator>` (e.g. `entity.type`)
+3. Variant columns:
+   - for each variant key in `variantOrder`
+   - for each field in that variant struct’s `fieldOrder`
+   - header text: `<variantKey>.<fieldName>` (e.g. `person.first_name`)
+
+This intentionally makes the grid “wide” and exercises conditional inactivation.
+
+### 3.3 Rendering behavior
+Implement a dedicated renderer path, conceptually:
+- `renderListAsUnionTable(...)` (or extend the existing table renderer with a “mode”)
+
+Per row:
+- Base fields:
+  - reuse existing `renderScalarCell` / `renderReferenceCell`
+- Union discriminator cell:
+  - render a compact `<select>` of variant keys
+  - `onchange` dispatches:
+    - `{ type: "SelectVariant", at: <rowValuePath + [unionFieldName]>, variantKey: <selected> }`
+  - focus/cursor dataset:
+    - `dataset.projectionPath` should point to the union node projection path (row + Field unionFieldName)
+    - `dataset.valuePath` should point to the discriminator value path (row + unionFieldName + discriminator)
+  - show union-level errors under the select (issues live at the union projection path)
+- Variant field cells:
+  - for each column `(variantKey, fieldName)`:
+    - projection path string should be:
+      - `.../fields/<unionField>/variants/<variantKey>/fields/<fieldName>`
+    - value path should be:
+      - `rowValuePath + [unionFieldName, "data", fieldName]`
+    - if sigma judgment is `Inactive`, render empty cell
+    - else render scalar/reference cell
+
+### 3.4 Focus / cursor safety
+- No event handler captures a stale `ValuePath` in closure.
+- All handlers parse `dataset.valuePath` at event time (same pattern as existing renderers).
+
+---
+
+## Validation
+
+### Automated
+Run:
+- `npm run test:schema`
+- `npm test`
+- `npm run renderer:build`
+
+### Manual (must-pass scenarios)
+Run:
+- `npm run renderer:dev`
+
+Checks:
+1. Load `grid-row-union` and seed 100 rows.
+   - Person rows populate only person columns; company columns empty.
+   - Company rows populate only company columns; person columns empty.
+2. Switch a row’s `entity.type` person → company:
+   - prior person payload clears (inactive columns empty)
+   - company required fields become missing/incomplete until filled
+3. Add/remove rows behaves correctly; focus remains usable.
+4. No console errors.
+
+---
+
+## Deliverables Checklist
+
+- `tests/fixtures/grid-row-union.json`
+- `renderer/grid-row-union.html`
+- `renderer/main.ts` updated (fixture + importer + seed buttons + quick page link)
+- `renderer/demo_data.ts` updated (deterministic generator for `grid-row-union`)
+- `renderer/containers.ts` updated (row-union table mode)
+- `npm test` passes
