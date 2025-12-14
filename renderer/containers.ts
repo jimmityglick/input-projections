@@ -387,7 +387,6 @@ function renderListAsTable(
   addBtn.disabled = arr.length >= node.maxItems;
   addBtn.dataset.projectionPath = projectionPathString;
   addBtn.dataset.valuePath = listValPathStr;
-  bindCursorFocusForList(addBtn, ctx);
 
   addBtn.onclick = () => {
     const vpStr = addBtn.dataset.valuePath;
@@ -421,7 +420,6 @@ function renderListAsTable(
     const vp = parseValuePath(vpStr);
     ctx.dispatch({ type: "Unset", at: vp });
   };
-  bindCursorFocusForList(resetBtn, ctx);
   resetBtn.dataset.projectionPath = projectionPathString;
   resetBtn.dataset.valuePath = listValPathStr;
 
@@ -462,7 +460,29 @@ function renderListAsTable(
     const itemProjectionPathStr = projectionPathToString(itemProjectionPath);
     const rowKey = `${itemProjectionPathStr}::table-row`;
 
-    const tr = getOrCreate(ctx.cache, rowKey, () => document.createElement("tr")) as HTMLTableRowElement;
+    // Cache the entire row structure including cells and remove button
+    const tr = getOrCreate(ctx.cache, rowKey, () => {
+      const row = document.createElement("tr");
+      // Create cells for each field
+      for (const fieldName of structItem.fieldOrder) {
+        const td = document.createElement("td");
+        td.className = "grid-table-cell";
+        td.dataset.field = fieldName;
+        row.appendChild(td);
+      }
+      // Create actions cell with remove button
+      const tdActions = document.createElement("td");
+      tdActions.className = "grid-table-actions";
+      tdActions.dataset.role = "actions";
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.textContent = "Remove";
+      removeBtn.dataset.role = "remove";
+      tdActions.appendChild(removeBtn);
+      row.appendChild(tdActions);
+      return row;
+    }) as HTMLTableRowElement;
+
     tr.dataset.projectionPath = itemProjectionPathStr;
     tr.dataset.valuePath = valuePathToString([...valuePath, i]);
 
@@ -472,7 +492,7 @@ function renderListAsTable(
         ? (rowValue as Record<string, EngineValue>)
         : {};
 
-    const desiredCells: HTMLTableCellElement[] = [];
+    // Update field cells
     for (const fieldName of structItem.fieldOrder) {
       const fieldNode = structItem.fields[fieldName];
       const fieldProjectionPath: ProjectionPath = [...itemProjectionPath, { type: "Field", name: fieldName }];
@@ -484,8 +504,7 @@ function renderListAsTable(
       const nodeSigma = sigma.byProjectionPath.get(fieldProjectionPathStr);
       const cellJudgment = nodeSigma?.judgment ?? "Valid";
 
-      const td = document.createElement("td");
-      td.className = "grid-table-cell";
+      const td = tr.querySelector<HTMLTableCellElement>(`td[data-field="${fieldName}"]`)!;
 
       if (cellJudgment !== "Inactive") {
         let cellEl: HTMLElement | null = null;
@@ -494,26 +513,19 @@ function renderListAsTable(
         } else if (fieldNode.kind === "Reference") {
           cellEl = renderReferenceCell(fieldNode, fieldValue, fieldProjectionPathStr, fieldValuePathStr, cellJudgment, sigma, ctx);
         }
-        if (cellEl) {
-          reconcileChildren(td, [cellEl]);
-        }
+        reconcileChildren(td, cellEl ? [cellEl] : []);
+      } else {
+        reconcileChildren(td, []);
       }
-      desiredCells.push(td);
     }
 
-    // Actions cell (Remove button)
-    const tdActions = document.createElement("td");
-    tdActions.className = "grid-table-actions";
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.textContent = "Remove";
-    removeBtn.dataset.role = "remove";
+    // Update remove button
+    const removeBtn = tr.querySelector<HTMLButtonElement>('button[data-role="remove"]')!;
     removeBtn.dataset.projectionPath = projectionPathString;
     removeBtn.dataset.valuePath = listValPathStr;
     removeBtn.dataset.index = String(i);
     removeBtn.tabIndex = -1;
     removeBtn.disabled = typeof node.minItems === "number" ? arr.length <= node.minItems : false;
-    bindCursorFocusForList(removeBtn, ctx);
     removeBtn.onclick = () => {
       const vpStr = removeBtn.dataset.valuePath;
       if (!vpStr) return;
@@ -541,29 +553,12 @@ function renderListAsTable(
         ctx.dispatch({ type: "MoveCursor", toProjectionPath: projectionPath, toValuePath: valuePath });
       }
     };
-    reconcileChildren(tdActions, [removeBtn]);
-    desiredCells.push(tdActions);
 
-    reconcileChildren(tr, desiredCells);
     desiredRows.push(tr);
   }
   reconcileChildren(tbody, desiredRows);
 
   return wrapper;
-}
-
-function bindCursorFocusForList(el: HTMLElement, ctx: RenderContext): void {
-  el.onfocus = (e) => {
-    const target = e.currentTarget as HTMLElement;
-    const projPathStr = target.dataset.projectionPath;
-    const valPathStr = target.dataset.valuePath;
-    if (!projPathStr || !valPathStr) return;
-    ctx.dispatch({
-      type: "MoveCursor",
-      toProjectionPath: parseProjectionPath(projPathStr),
-      toValuePath: parseValuePath(valPathStr),
-    });
-  };
 }
 
 export function renderList(
