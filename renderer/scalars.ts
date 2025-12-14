@@ -9,6 +9,7 @@ import {
   parseValuePath,
   reconcileChildren,
   setJudgmentClasses,
+  valuePathToString,
 } from "./utils";
 
 function bindCursorFocus(el: HTMLElement, ctx: RenderContext): void {
@@ -509,5 +510,313 @@ export function renderReference(
   const errorEls = renderErrorsInto(input, sigma, projectionPathString, idBase, judgment);
   reconcileChildren(stack, [input, ...errorEls]);
   reconcileChildren(controlRow, [stack, clearBtn]);
+  return wrapper;
+}
+
+// --- Cell-mode renderers for table view ---
+// These render compact input/select + errors without header/path/hint.
+
+function createCellWrapper(
+  ctx: RenderContext,
+  projectionPathString: string,
+  valuePathString: string,
+  judgment: string,
+): HTMLElement {
+  const wrapper = getOrCreate(ctx.cache, projectionPathString, () => {
+    const div = document.createElement("div");
+    div.className = "grid-cell";
+    const stack = document.createElement("div");
+    stack.dataset.role = "stack";
+    stack.className = "grid-cell-stack";
+    div.appendChild(stack);
+    return div;
+  });
+  setJudgmentClasses(wrapper, judgment);
+  wrapper.dataset.projectionPath = projectionPathString;
+  wrapper.dataset.valuePath = valuePathString;
+  return wrapper;
+}
+
+function renderCellErrorsInto(
+  inputEl: HTMLElement,
+  sigma: Sigma,
+  projectionPathString: string,
+  inputIdBase: string,
+  judgment: string,
+): HTMLElement[] {
+  const issues = issuesForProjectionPath(sigma, projectionPathString);
+  const errorEls = createErrorElements(issues, inputIdBase);
+
+  const describedBy = errorEls.map((e) => e.id).filter(Boolean);
+  if (inputEl instanceof HTMLInputElement || inputEl instanceof HTMLSelectElement) {
+    if (describedBy.length > 0) inputEl.setAttribute("aria-describedby", describedBy.join(" "));
+    else inputEl.removeAttribute("aria-describedby");
+    if (judgment === "Invalid" || judgment === "Incomplete") inputEl.setAttribute("aria-invalid", "true");
+    else inputEl.removeAttribute("aria-invalid");
+  }
+  return errorEls;
+}
+
+export function renderScalarCell(
+  node: CompiledScalarNode,
+  value: EngineValue,
+  projectionPathString: string,
+  valuePathString: string,
+  judgment: string,
+  sigma: Sigma,
+  ctx: RenderContext,
+): HTMLElement {
+  const wrapper = createCellWrapper(ctx, projectionPathString, valuePathString, judgment);
+  const stack = wrapper.querySelector<HTMLElement>(':scope > [data-role="stack"]')!;
+  const idBase = nodeIdFromProjectionPath(projectionPathString);
+
+  if (node.scalar.type === "string") {
+    if (node.scalar.enum) {
+      const select = (stack.querySelector("select") ?? document.createElement("select")) as HTMLSelectElement;
+      select.className = "grid-cell-input";
+      select.id = `${idBase}-input`;
+      select.dataset.valuePath = valuePathString;
+      select.dataset.projectionPath = projectionPathString;
+      bindCursorFocus(select, ctx);
+
+      const UNSET = "__unset__";
+      const desiredOptions: HTMLOptionElement[] = [];
+      const optUnset = document.createElement("option");
+      optUnset.value = UNSET;
+      optUnset.textContent = "";
+      desiredOptions.push(optUnset);
+      for (const v of node.scalar.enum) {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        desiredOptions.push(opt);
+      }
+      reconcileChildren(select, desiredOptions);
+
+      const current = value === undefined ? UNSET : typeof value === "string" ? value : UNSET;
+      select.value = current;
+
+      select.onchange = (e) => {
+        const target = e.currentTarget as HTMLSelectElement;
+        const vpStr = target.dataset.valuePath;
+        if (!vpStr) return;
+        const vp = parseValuePath(vpStr);
+        if (target.value === UNSET) {
+          ctx.dispatch({ type: "Unset", at: vp });
+          return;
+        }
+        ctx.dispatch({ type: "SetScalar", at: vp, value: target.value });
+      };
+
+      const errorEls = renderCellErrorsInto(select, sigma, projectionPathString, idBase, judgment);
+      reconcileChildren(stack, [select, ...errorEls]);
+      return wrapper;
+    }
+
+    const input = (stack.querySelector("input") ?? document.createElement("input")) as HTMLInputElement;
+    input.type = "text";
+    input.className = "grid-cell-input";
+    input.id = `${idBase}-input`;
+    input.dataset.valuePath = valuePathString;
+    input.dataset.projectionPath = projectionPathString;
+    bindCursorFocus(input, ctx);
+
+    input.value = typeof value === "string" ? value : "";
+    input.placeholder = value === undefined ? "" : "";
+
+    input.oninput = (e) => {
+      const target = e.currentTarget as HTMLInputElement;
+      const vpStr = target.dataset.valuePath;
+      if (!vpStr) return;
+      const vp = parseValuePath(vpStr);
+      ctx.dispatch({ type: "SetScalar", at: vp, value: target.value });
+    };
+
+    const errorEls = renderCellErrorsInto(input, sigma, projectionPathString, idBase, judgment);
+    reconcileChildren(stack, [input, ...errorEls]);
+    return wrapper;
+  }
+
+  if (node.scalar.type === "number") {
+    if (node.scalar.enum) {
+      const select = (stack.querySelector("select") ?? document.createElement("select")) as HTMLSelectElement;
+      select.className = "grid-cell-input";
+      select.id = `${idBase}-input`;
+      select.dataset.valuePath = valuePathString;
+      select.dataset.projectionPath = projectionPathString;
+      bindCursorFocus(select, ctx);
+
+      const UNSET = "__unset__";
+      const desiredOptions: HTMLOptionElement[] = [];
+      const optUnset = document.createElement("option");
+      optUnset.value = UNSET;
+      optUnset.textContent = "";
+      desiredOptions.push(optUnset);
+      for (const v of node.scalar.enum) {
+        const opt = document.createElement("option");
+        opt.value = String(v);
+        opt.textContent = String(v);
+        desiredOptions.push(opt);
+      }
+      reconcileChildren(select, desiredOptions);
+
+      const current = typeof value === "number" ? String(value) : UNSET;
+      select.value = current;
+
+      select.onchange = (e) => {
+        const target = e.currentTarget as HTMLSelectElement;
+        const vpStr = target.dataset.valuePath;
+        if (!vpStr) return;
+        const vp = parseValuePath(vpStr);
+        if (target.value === UNSET) {
+          ctx.dispatch({ type: "Unset", at: vp });
+          return;
+        }
+        ctx.dispatch({ type: "SetScalar", at: vp, value: Number(target.value) });
+      };
+
+      const errorEls = renderCellErrorsInto(select, sigma, projectionPathString, idBase, judgment);
+      reconcileChildren(stack, [select, ...errorEls]);
+      return wrapper;
+    }
+
+    const input = (stack.querySelector("input") ?? document.createElement("input")) as HTMLInputElement;
+    input.type = "number";
+    input.className = "grid-cell-input";
+    input.id = `${idBase}-input`;
+    input.dataset.valuePath = valuePathString;
+    input.dataset.projectionPath = projectionPathString;
+    bindCursorFocus(input, ctx);
+
+    input.value = typeof value === "number" ? String(value) : "";
+
+    input.oninput = (e) => {
+      const target = e.currentTarget as HTMLInputElement;
+      const vpStr = target.dataset.valuePath;
+      if (!vpStr) return;
+      const vp = parseValuePath(vpStr);
+      if (target.value === "") {
+        ctx.dispatch({ type: "Unset", at: vp });
+        return;
+      }
+      ctx.dispatch({ type: "SetScalar", at: vp, value: Number(target.value) });
+    };
+
+    const errorEls = renderCellErrorsInto(input, sigma, projectionPathString, idBase, judgment);
+    reconcileChildren(stack, [input, ...errorEls]);
+    return wrapper;
+  }
+
+  if (node.scalar.type === "boolean") {
+    const input = (stack.querySelector("input") ?? document.createElement("input")) as HTMLInputElement;
+    input.type = "checkbox";
+    input.className = "grid-cell-checkbox";
+    input.id = `${idBase}-input`;
+    input.dataset.valuePath = valuePathString;
+    input.dataset.projectionPath = projectionPathString;
+    bindCursorFocus(input, ctx);
+
+    input.checked = value === true;
+
+    input.onchange = (e) => {
+      const target = e.currentTarget as HTMLInputElement;
+      const vpStr = target.dataset.valuePath;
+      if (!vpStr) return;
+      const vp = parseValuePath(vpStr);
+      ctx.dispatch({ type: "SetScalar", at: vp, value: target.checked });
+    };
+
+    const errorEls = renderCellErrorsInto(input, sigma, projectionPathString, idBase, judgment);
+    reconcileChildren(stack, [input, ...errorEls]);
+    return wrapper;
+  }
+
+  // null type - show as disabled text
+  const input = (stack.querySelector("input") ?? document.createElement("input")) as HTMLInputElement;
+  input.type = "text";
+  input.className = "grid-cell-input";
+  input.disabled = true;
+  input.value = value === null ? "null" : "";
+  const errorEls = renderCellErrorsInto(input, sigma, projectionPathString, idBase, judgment);
+  reconcileChildren(stack, [input, ...errorEls]);
+  return wrapper;
+}
+
+export function renderReferenceCell(
+  node: CompiledReferenceNode,
+  value: EngineValue,
+  projectionPathString: string,
+  valuePathString: string,
+  judgment: string,
+  sigma: Sigma,
+  ctx: RenderContext,
+): HTMLElement {
+  const wrapper = createCellWrapper(ctx, projectionPathString, valuePathString, judgment);
+  const stack = wrapper.querySelector<HTMLElement>(':scope > [data-role="stack"]')!;
+  const idBase = nodeIdFromProjectionPath(projectionPathString);
+
+  const formatEnum = node.format?.enum;
+  if (formatEnum) {
+    const select = (stack.querySelector("select") ?? document.createElement("select")) as HTMLSelectElement;
+    select.className = "grid-cell-input";
+    select.id = `${idBase}-input`;
+    select.dataset.valuePath = valuePathString;
+    select.dataset.projectionPath = projectionPathString;
+    bindCursorFocus(select, ctx);
+
+    const UNSET = "__unset__";
+    const desiredOptions: HTMLOptionElement[] = [];
+    const optUnset = document.createElement("option");
+    optUnset.value = UNSET;
+    optUnset.textContent = "";
+    desiredOptions.push(optUnset);
+    for (const v of formatEnum) {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      desiredOptions.push(opt);
+    }
+    reconcileChildren(select, desiredOptions);
+
+    const current = value === undefined ? UNSET : typeof value === "string" ? value : UNSET;
+    select.value = current;
+
+    select.onchange = (e) => {
+      const target = e.currentTarget as HTMLSelectElement;
+      const vpStr = target.dataset.valuePath;
+      if (!vpStr) return;
+      const vp = parseValuePath(vpStr);
+      if (target.value === UNSET) {
+        ctx.dispatch({ type: "Unset", at: vp });
+        return;
+      }
+      ctx.dispatch({ type: "SetScalar", at: vp, value: target.value });
+    };
+
+    const errorEls = renderCellErrorsInto(select, sigma, projectionPathString, idBase, judgment);
+    reconcileChildren(stack, [select, ...errorEls]);
+    return wrapper;
+  }
+
+  const input = (stack.querySelector("input") ?? document.createElement("input")) as HTMLInputElement;
+  input.type = "text";
+  input.className = "grid-cell-input";
+  input.id = `${idBase}-input`;
+  input.dataset.valuePath = valuePathString;
+  input.dataset.projectionPath = projectionPathString;
+  bindCursorFocus(input, ctx);
+
+  input.value = typeof value === "string" ? value : "";
+
+  input.oninput = (e) => {
+    const target = e.currentTarget as HTMLInputElement;
+    const vpStr = target.dataset.valuePath;
+    if (!vpStr) return;
+    const vp = parseValuePath(vpStr);
+    ctx.dispatch({ type: "SetScalar", at: vp, value: target.value });
+  };
+
+  const errorEls = renderCellErrorsInto(input, sigma, projectionPathString, idBase, judgment);
+  reconcileChildren(stack, [input, ...errorEls]);
   return wrapper;
 }

@@ -93,3 +93,80 @@ small.error {
   padding: 0.75rem;
   border-radius: 6px;
 }
+
+/* Grid Table Styles */
+.grid-list {
+  margin: 0.75rem 0;
+}
+
+.grid-table-wrapper {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.grid-table th,
+.grid-table td {
+  border: 1px solid var(--inspector-border);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.grid-table th {
+  background: rgba(0, 0, 0, 0.03);
+  font-weight: 600;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.grid-table-cell {
+  min-width: 80px;
+}
+
+.grid-table-actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.grid-cell {
+  display: contents;
+}
+
+.grid-cell-stack {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.grid-cell-input {
+  width: 100%;
+  min-width: 60px;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.85rem;
+  box-sizing: border-box;
+}
+
+.grid-cell-checkbox {
+  margin: 0;
+}
+
+.grid-table .judgment-invalid {
+  background: color-mix(in srgb, var(--inspector-invalid) 8%, transparent);
+}
+
+.grid-table .judgment-incomplete {
+  background: color-mix(in srgb, var(--inspector-incomplete) 8%, transparent);
+}
+
+.grid-table small.error {
+  font-size: 0.75rem;
+  margin: 0;
+}

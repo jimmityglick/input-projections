@@ -1,6 +1,7 @@
 import { createEngine } from "../dist/esm/index.js";
 import type { ProjectionDefinition } from "../dist/esm/index.js";
 import { createRenderer } from "./index";
+import { generateDemoValue } from "./demo_data";
 
 type FixtureKey =
   | "purchase-order"
@@ -11,7 +12,8 @@ type FixtureKey =
   | "job-application"
   | "deep-nesting"
   | "empty-list"
-  | "union-all-variants";
+  | "union-all-variants"
+  | "grid-flat-rows";
 
 const FIXTURES: { key: FixtureKey; file: string; label: string }[] = [
   { key: "purchase-order", file: "purchase-order.json", label: "purchase-order" },
@@ -20,6 +22,7 @@ const FIXTURES: { key: FixtureKey; file: string; label: string }[] = [
   { key: "event-booking", file: "event-booking.json", label: "event-booking" },
   { key: "fund-transfer", file: "fund-transfer.json", label: "fund-transfer" },
   { key: "job-application", file: "job-application.json", label: "job-application" },
+  { key: "grid-flat-rows", file: "grid-flat-rows.json", label: "grid: flat rows" },
   { key: "deep-nesting", file: "deep-nesting.json", label: "edge: deep nesting" },
   { key: "empty-list", file: "empty-list.json", label: "edge: empty list" },
   { key: "union-all-variants", file: "union-all-variants.json", label: "edge: union variants" },
@@ -32,6 +35,7 @@ const FIXTURE_IMPORTERS: Record<string, () => Promise<{ default: ProjectionDefin
   "event-booking.json": () => import("../tests/fixtures/event-booking.json"),
   "fund-transfer.json": () => import("../tests/fixtures/fund-transfer.json"),
   "job-application.json": () => import("../tests/fixtures/job-application.json"),
+  "grid-flat-rows.json": () => import("../tests/fixtures/grid-flat-rows.json"),
   "deep-nesting.json": () => import("../tests/fixtures/deep-nesting.json"),
   "empty-list.json": () => import("../tests/fixtures/empty-list.json"),
   "union-all-variants.json": () => import("../tests/fixtures/union-all-variants.json"),
@@ -57,9 +61,18 @@ function mustGetEl<T extends HTMLElement>(id: string): T {
   return el as T;
 }
 
+type SeedCallback = (rows?: number) => void;
+
 function mountControls(
   container: HTMLElement,
-  state: { selected: FixtureKey; onSelect: (k: FixtureKey) => void; onReset: () => void; onPrev: () => void; onNext: () => void },
+  state: {
+    selected: FixtureKey;
+    onSelect: (k: FixtureKey) => void;
+    onReset: () => void;
+    onPrev: () => void;
+    onNext: () => void;
+    onSeed: SeedCallback;
+  },
 ): void {
   const form = document.createElement("form");
   form.onsubmit = (e) => e.preventDefault();
@@ -101,12 +114,41 @@ function mountControls(
 
   grid.append(label, resetBtn, prevBtn, nextBtn);
 
+  // Seed buttons row
+  const seedRow = document.createElement("div");
+  seedRow.style.display = "flex";
+  seedRow.style.gap = "0.5rem";
+  seedRow.style.flexWrap = "wrap";
+  seedRow.style.alignItems = "center";
+
+  const seedLabel = document.createElement("span");
+  seedLabel.textContent = "Seed demo:";
+  seedRow.appendChild(seedLabel);
+
+  if (state.selected === "grid-flat-rows") {
+    // Grid fixture: offer multiple row counts
+    for (const rowCount of [10, 100, 500]) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = `${rowCount} rows`;
+      btn.onclick = () => state.onSeed(rowCount);
+      seedRow.appendChild(btn);
+    }
+  } else {
+    // Non-grid fixtures: single seed button
+    const seedBtn = document.createElement("button");
+    seedBtn.type = "button";
+    seedBtn.textContent = "Seed value";
+    seedBtn.onclick = () => state.onSeed();
+    seedRow.appendChild(seedBtn);
+  }
+
   const pages = document.createElement("p");
   pages.className = "secondary";
   pages.innerHTML =
-    'Quick pages: <a href="/purchase-order.html">purchase-order</a>, <a href="/password-confirmation.html">password-confirmation</a>, <a href="/price-range-filter.html">price-range-filter</a>, <a href="/edge-cases.html">edge-cases</a>';
+    'Quick pages: <a href="/purchase-order.html">purchase-order</a>, <a href="/password-confirmation.html">password-confirmation</a>, <a href="/price-range-filter.html">price-range-filter</a>, <a href="/grid-flat-rows.html">grid-flat-rows</a>, <a href="/edge-cases.html">edge-cases</a>';
 
-  form.append(grid, pages);
+  form.append(grid, seedRow, pages);
   container.replaceChildren(form);
 }
 
@@ -134,12 +176,22 @@ async function main(): Promise<void> {
       renderer.render(engine, app);
     };
 
+    const doSeed = (rows?: number) => {
+      const spec = rows !== undefined ? { kind: "grid" as const, rows } : { kind: "default" as const };
+      const value = generateDemoValue(fixtureKey, spec);
+      if (value !== null) {
+        engine.reset(value);
+        renderer.render(engine, app);
+      }
+    };
+
     mountControls(appControls, {
       selected: fixtureKey,
       onSelect: (k) => {
         void loadAndStart(k);
       },
       onReset: doReset,
+      onSeed: doSeed,
       onPrev: () => {
         engine.prev();
         renderer.render(engine, app);
