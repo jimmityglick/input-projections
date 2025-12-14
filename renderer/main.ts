@@ -1,7 +1,23 @@
 import { createEngine } from "../dist/esm/index.js";
 import type { ProjectionDefinition } from "../dist/esm/index.js";
 import { createRenderer } from "./index";
+import { createRendererSnabbdom } from "./snabbdom/index";
 import { generateDemoValue } from "./demo_data";
+
+type RendererMode = "imperative" | "snabbdom";
+
+function getRendererMode(): RendererMode {
+  const params = new URLSearchParams(window.location.search);
+  const queryMode = params.get("renderer");
+  if (queryMode === "snabbdom") return "snabbdom";
+  const stored = localStorage.getItem("renderer");
+  if (stored === "snabbdom") return "snabbdom";
+  return "imperative";
+}
+
+function createRendererByMode(mode: RendererMode, dispatch: (action: import("../dist/esm/index.js").Action) => import("../dist/esm/index.js").State) {
+  return mode === "snabbdom" ? createRendererSnabbdom(dispatch) : createRenderer(dispatch);
+}
 
 type FixtureKey =
   | "purchase-order"
@@ -70,6 +86,7 @@ function mountControls(
   container: HTMLElement,
   state: {
     selected: FixtureKey;
+    rendererMode: RendererMode;
     onSelect: (k: FixtureKey) => void;
     onReset: () => void;
     onPrev: () => void;
@@ -151,7 +168,13 @@ function mountControls(
   pages.innerHTML =
     'Quick pages: <a href="/purchase-order.html">purchase-order</a>, <a href="/password-confirmation.html">password-confirmation</a>, <a href="/price-range-filter.html">price-range-filter</a>, <a href="/grid-flat-rows.html">grid-flat-rows</a>, <a href="/grid-row-union.html">grid-row-union</a>, <a href="/edge-cases.html">edge-cases</a>';
 
-  form.append(grid, seedRow, pages);
+  const rendererInfo = document.createElement("p");
+  rendererInfo.className = "secondary";
+  const modeLabel = state.rendererMode === "snabbdom" ? "snabbdom (VDOM)" : "imperative";
+  const toggleLink = state.rendererMode === "snabbdom" ? "?renderer=imperative" : "?renderer=snabbdom";
+  rendererInfo.innerHTML = `Renderer: <strong>${modeLabel}</strong> — <a href="${toggleLink}">switch</a>`;
+
+  form.append(grid, seedRow, pages, rendererInfo);
   container.replaceChildren(form);
 }
 
@@ -162,13 +185,15 @@ async function main(): Promise<void> {
   const initial = fixtureFromHtml() ?? "purchase-order";
   let currentFixture: FixtureKey = initial;
 
+  const rendererMode = getRendererMode();
+
   const loadAndStart = async (fixtureKey: FixtureKey) => {
     currentFixture = fixtureKey;
     const fixture = FIXTURES.find((f) => f.key === fixtureKey) ?? FIXTURES[0];
     const projection = await loadFixture(fixture.file);
 
     const engine = createEngine(projection);
-    const renderer = createRenderer((action) => {
+    const renderer = createRendererByMode(rendererMode, (action) => {
       const next = engine.dispatch(action);
       renderer.render(engine, app);
       return next;
@@ -190,6 +215,7 @@ async function main(): Promise<void> {
 
     mountControls(appControls, {
       selected: fixtureKey,
+      rendererMode,
       onSelect: (k) => {
         void loadAndStart(k);
       },
