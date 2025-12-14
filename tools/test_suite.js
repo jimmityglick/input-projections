@@ -2,9 +2,21 @@ const fs = require("fs");
 const path = require("path");
 const Ajv = require("ajv/dist/2020");
 const addFormats = require("ajv-formats");
+const { resolveProjectionObject } = require("./resolve_includes");
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function createCachedReader() {
+  const cache = new Map();
+  return (filePath) => {
+    const abs = path.resolve(filePath);
+    if (cache.has(abs)) return cache.get(abs);
+    const parsed = readJson(abs);
+    cache.set(abs, parsed);
+    return parsed;
+  };
 }
 
 function listJsonFiles(dirPath) {
@@ -191,8 +203,30 @@ if (!fs.existsSync(testsDir)) {
 let passed = 0;
 let failed = 0;
 
-function runOne(name, projection, shouldBeValid) {
-  const isValid = validate(projection);
+const readProjection = createCachedReader();
+
+function runOne(name, projection, shouldBeValid, baseDir, stackRootPath) {
+  let resolved = projection;
+  try {
+    resolved = resolveProjectionObject(projection, {
+      baseDir,
+      readProjection,
+      stack: stackRootPath ? [stackRootPath] : [],
+    });
+  } catch (e) {
+    if (!shouldBeValid) {
+      passed += 1;
+      return;
+    }
+    failed += 1;
+    console.error(`FAIL: ${name}`);
+    console.error(`  expected: valid`);
+    console.error(`  actual:   include_resolution_error`);
+    console.error(`  error:    ${e instanceof Error ? e.message : String(e)}`);
+    return;
+  }
+
+  const isValid = validate(resolved);
   if ((shouldBeValid && isValid) || (!shouldBeValid && !isValid)) {
     passed += 1;
     return;
@@ -217,7 +251,13 @@ for (const filePath of caseFiles) {
 
   for (const [testName, projection] of Object.entries(suite)) {
     const shouldBeValid = !testName.startsWith("invalid_");
-    runOne(`${path.basename(filePath)}::${testName}`, projection, shouldBeValid);
+    runOne(
+      `${path.basename(filePath)}::${testName}`,
+      projection,
+      shouldBeValid,
+      path.dirname(filePath),
+      null,
+    );
   }
 }
 
@@ -225,7 +265,13 @@ for (const filePath of fixtureFiles) {
   const projection = readJson(filePath);
   const baseName = path.basename(filePath, ".json");
   const shouldBeValid = !baseName.startsWith("invalid_");
-  runOne(`fixture::${baseName}`, projection, shouldBeValid);
+  runOne(
+    `fixture::${baseName}`,
+    projection,
+    shouldBeValid,
+    path.dirname(filePath),
+    filePath,
+  );
 }
 
 console.log(`Summary: ${passed} passed, ${failed} failed`);

@@ -2,6 +2,12 @@
 
 This document defines the **reference implementation** runtime value model used by the TypeScript engine in `src/`.
 
+## Projection Loading and Bundling
+
+The Engine core does not perform file I/O and does not resolve multi-file projection sources at runtime.
+
+If your authoring format uses preprocessing directives (for example, `$ref` includes), resolve/bundle them into a single canonical projection **before** calling `createEngine(...)`. See `docs/PREPROCESSING.md`.
+
 ## Partial Values
 
 During incremental interaction, values may be **partial**:

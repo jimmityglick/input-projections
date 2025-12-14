@@ -3,6 +3,7 @@ import type { ProjectionDefinition } from "../dist/esm/index.js";
 import { createRenderer } from "./index";
 import { createRendererSnabbdom } from "./snabbdom/index";
 import { generateDemoValue } from "./demo_data";
+import { resolveProjectionIncludes } from "./resolve_includes";
 
 type RendererMode = "imperative" | "snabbdom";
 
@@ -24,6 +25,7 @@ type FixtureKey =
   | "event-booking"
   | "fund-transfer"
   | "job-application"
+  | "address-reuse"
   | "deep-nesting"
   | "empty-list"
   | "union-all-variants"
@@ -37,6 +39,7 @@ const FIXTURES: { key: FixtureKey; file: string; label: string }[] = [
   { key: "event-booking", file: "event-booking.json", label: "event-booking" },
   { key: "fund-transfer", file: "fund-transfer.json", label: "fund-transfer" },
   { key: "job-application", file: "job-application.json", label: "job-application" },
+  { key: "address-reuse", file: "address-reuse.json", label: "reuse: address-section.json" },
   { key: "grid-flat-rows", file: "grid-flat-rows.json", label: "grid: flat rows" },
   { key: "grid-row-union", file: "grid-row-union.json", label: "grid: row union" },
   { key: "deep-nesting", file: "deep-nesting.json", label: "edge: deep nesting" },
@@ -44,25 +47,30 @@ const FIXTURES: { key: FixtureKey; file: string; label: string }[] = [
   { key: "union-all-variants", file: "union-all-variants.json", label: "edge: union variants" },
 ];
 
-const FIXTURE_IMPORTERS: Record<string, () => Promise<{ default: ProjectionDefinition }>> = {
-  "purchase-order.json": () => import("../tests/fixtures/purchase-order.json"),
-  "password-confirmation.json": () => import("../tests/fixtures/password-confirmation.json"),
-  "price-range-filter.json": () => import("../tests/fixtures/price-range-filter.json"),
-  "event-booking.json": () => import("../tests/fixtures/event-booking.json"),
-  "fund-transfer.json": () => import("../tests/fixtures/fund-transfer.json"),
-  "job-application.json": () => import("../tests/fixtures/job-application.json"),
-  "grid-flat-rows.json": () => import("../tests/fixtures/grid-flat-rows.json"),
-  "grid-row-union.json": () => import("../tests/fixtures/grid-row-union.json"),
-  "deep-nesting.json": () => import("../tests/fixtures/deep-nesting.json"),
-  "empty-list.json": () => import("../tests/fixtures/empty-list.json"),
-  "union-all-variants.json": () => import("../tests/fixtures/union-all-variants.json"),
-};
+const FIXTURE_MODULES = import.meta.glob<{ default: ProjectionDefinition }>("../tests/fixtures/*.json");
+const FIXTURE_IMPORTERS: Record<string, () => Promise<{ default: ProjectionDefinition }>> = Object.fromEntries(
+  Object.entries(FIXTURE_MODULES).map(([modulePath, loader]) => {
+    const fileName = modulePath.split("/").pop();
+    if (!fileName) throw new Error(`Invalid fixture module path: ${modulePath}`);
+    return [fileName, loader];
+  }),
+);
 
-async function loadFixture(file: string): Promise<ProjectionDefinition> {
+async function loadRawFixture(file: string): Promise<ProjectionDefinition> {
   const importer = FIXTURE_IMPORTERS[file];
   if (!importer) throw new Error(`Unknown fixture file: ${file}`);
   const mod = await importer();
   return mod.default;
+}
+
+async function loadFixture(file: string): Promise<ProjectionDefinition> {
+  const root = await loadRawFixture(file);
+  const cache = new Map<string, Promise<ProjectionDefinition>>();
+  const loadProjection = (refFile: string) => {
+    if (!cache.has(refFile)) cache.set(refFile, loadRawFixture(refFile));
+    return cache.get(refFile)!;
+  };
+  return resolveProjectionIncludes(root, { loadProjection, stack: [file] });
 }
 
 function fixtureFromHtml(): FixtureKey | null {

@@ -115,6 +115,22 @@ If a specification requires a submit handler, an API call, or knowledge of appli
 
 ---
 
+## Projection Bundling (Preprocessing)
+
+An Input Projection is a **single closed specification**. In practice, however, authors often want reuse and modularity (shared “sections” used in multiple places).
+
+This standard treats reuse as an **authoring-time preprocessing step**, not as an additional runtime primitive:
+
+- A projection may be written as a set of source files using include directives (for example, `$ref`).
+- A bundler resolves those includes into one **canonical** projection tree.
+- The Engine and Abstract Machine operate only on the canonical tree.
+
+Bundling preserves finiteness and declarativity because it is a deterministic transformation that must terminate (cycles are invalid).
+
+See `docs/PREPROCESSING.md` for the reference bundling semantics used by this repository.
+
+---
+
 ## Final Restatement
 
 **An Input Projection is a finite, declarative specification that defines how an agent may construct a locally valid data value.**

@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { resolveProjectionFile } = require("../tools/resolve_includes");
 
 function readJson(p) {
   return JSON.parse(fs.readFileSync(p, "utf8"));
@@ -33,8 +34,8 @@ test("engine parses all valid fixtures", () => {
   for (const filePath of listJsonFiles(fixturesDir)) {
     const base = path.basename(filePath, ".json");
     if (base.startsWith("invalid_")) continue;
-    const projection = readJson(filePath);
-    assert.doesNotThrow(() => createEngine(projection), `fixture ${base} should parse`);
+    const projection = resolveProjectionFile(filePath);
+    assert.doesNotThrow(() => createEngine(projection), `fixture ${base} should parse (after include resolution)`);
   }
 });
 
@@ -77,7 +78,7 @@ test("engine scenarios", async (t) => {
 });
 
 test("relation issues include related field paths", () => {
-  const projection = readJson(path.join(fixturesDir, "password-confirmation.json"));
+  const projection = resolveProjectionFile(path.join(fixturesDir, "password-confirmation.json"));
   const engine = createEngine(projection);
 
   engine.dispatch({ type: "SetScalar", at: ["password"], value: "abc12345" });

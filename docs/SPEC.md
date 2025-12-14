@@ -167,7 +167,9 @@ Any feature request requiring a new primitive is rejected as a violation of the 
 
 ## Part 5: The Standard JSON Schema
 
-Any valid Input Projection file must validate against this schema.
+Any valid **canonical** Input Projection file must validate against this schema.
+
+> Tooling Note (Informative): For authoring convenience, some tooling may support a preprocessing/bundling step (for example, `$ref` includes) that expands a multi-file source definition into a single canonical projection. Such directives are **not** part of the canonical form and MUST be resolved before schema validation or execution. See `docs/PREPROCESSING.md`.
 
 ```json
 {
