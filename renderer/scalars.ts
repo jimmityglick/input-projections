@@ -566,6 +566,7 @@ export function renderScalarCell(
   sigma: Sigma,
   ctx: RenderContext,
 ): HTMLElement {
+  console.log(`[CELL:ENTRY] renderScalarCell called, type=${node.scalar.type}, projPath=${projectionPathString}`);
   const wrapper = createCellWrapper(ctx, projectionPathString, valuePathString, judgment);
   const stack = wrapper.querySelector<HTMLElement>(':scope > [data-role="stack"]')!;
   const idBase = nodeIdFromProjectionPath(projectionPathString);
@@ -616,7 +617,9 @@ export function renderScalarCell(
     const row = (stack.querySelector("div.grid-cell-row") ?? document.createElement("div")) as HTMLDivElement;
     row.className = "grid-cell-row";
 
-    const input = (row.querySelector("input") ?? document.createElement("input")) as HTMLInputElement;
+    const existingInput = row.querySelector("input");
+    const input = (existingInput ?? document.createElement("input")) as HTMLInputElement;
+    console.log(`[CELL:GET] projPath=${projectionPathString}, foundExisting=${existingInput !== null}`);
     input.type = "text";
     input.className = "grid-cell-input";
     input.id = `${idBase}-input`;
@@ -624,7 +627,9 @@ export function renderScalarCell(
     input.dataset.projectionPath = projectionPathString;
     bindCursorFocus(input, ctx);
 
+    console.log(`[CELL:PRE] value=${value}, typeof=${typeof value}, current input.value="${input.value}"`);
     input.value = typeof value === "string" ? value : "";
+    console.log(`[CELL:SET] input.value is now "${input.value}"`);
     input.placeholder = value === undefined ? "(unset)" : "";
 
     input.oninput = (e) => {
@@ -652,9 +657,11 @@ export function renderScalarCell(
     }
 
     reconcileChildren(row, rowChildren);
+    console.log(`[CELL:RECONCILE1] after row reconcile, input.value="${input.value}"`);
 
     const errorEls = renderCellErrorsInto(input, sigma, projectionPathString, idBase, judgment);
     reconcileChildren(stack, [row, ...errorEls]);
+    console.log(`[CELL:RECONCILE2] after stack reconcile, input.value="${input.value}", errorCount=${errorEls.length}`);
     return wrapper;
   }
 

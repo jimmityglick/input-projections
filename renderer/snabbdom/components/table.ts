@@ -489,15 +489,14 @@ export function viewTable(
         };
 
         const select = h("select.grid-cell-input", {
-          props: { value: selectedVariant ?? UNSET },
           dataset: { projectionPath: unionProjectionPathStr, valuePath: discValuePathStr },
           on: {
             change: createDiscChangeHandler(),
             focus: createFocusHandler(ctx, unionProjectionPathStr, discValuePathStr),
           },
         }, [
-          h("option", { props: { value: UNSET } }, "(select variant)"),
-          ...col.unionNode.variantOrder.map((key) => h("option", { props: { value: key } }, key)),
+          h("option", { props: { value: UNSET, selected: selectedVariant === undefined } }, "(select variant)"),
+          ...col.unionNode.variantOrder.map((key) => h("option", { props: { value: key, selected: key === selectedVariant } }, key)),
         ]);
 
         return h("td.grid-table-cell", [

@@ -70,9 +70,9 @@ export function viewUnion(
   const selected = selectUnionVariant(node, value);
 
   const options: VNode[] = [
-    h("option", { props: { value: UNSET } }, "(select variant)"),
+    h("option", { props: { value: UNSET, selected: selected === undefined } }, "(select variant)"),
     ...node.variantOrder.map((key) =>
-      h("option", { props: { value: key } }, key)
+      h("option", { props: { value: key, selected: key === selected } }, key)
     ),
   ];
 

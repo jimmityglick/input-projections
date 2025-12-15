@@ -128,7 +128,7 @@ small.error {
 }
 
 .grid-table-cell {
-  min-width: 80px;
+  min-width: 120px;
 }
 
 .grid-table-actions {
@@ -161,7 +161,7 @@ small.error {
 
 .grid-cell-input {
   width: 100%;
-  min-width: 60px;
+  min-width: 100px;
   padding: 0.2rem 0.35rem;
   font-size: 0.85rem;
   box-sizing: border-box;

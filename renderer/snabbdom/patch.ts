@@ -13,25 +13,9 @@ import type { VNode } from "snabbdom";
 export type { VNode };
 export { h, toVNode };
 
-function syncControlledInputValue(vnode: VNode): void {
-  const elm = vnode.elm;
-  if (!(elm instanceof HTMLInputElement)) return;
-  const desired = vnode.data?.props?.value;
-  if (typeof desired !== "string") return;
-  if (elm.value !== desired) {
-    elm.value = desired;
-  }
-}
-
-const controlledInputValueModule = {
-  create: (_: VNode, vnode: VNode) => syncControlledInputValue(vnode),
-  update: (_: VNode, vnode: VNode) => syncControlledInputValue(vnode),
-};
-
 const patch = init([
   classModule,
   propsModule,
-  controlledInputValueModule,
   attributesModule,
   datasetModule,
   eventListenersModule,

@@ -80,6 +80,12 @@ function fixtureFromHtml(): FixtureKey | null {
   return v || null;
 }
 
+function getStoredFixture(): FixtureKey | null {
+  const stored = localStorage.getItem("fixture");
+  if (stored && FIXTURES.some((f) => f.key === stored)) return stored as FixtureKey;
+  return null;
+}
+
 function mustGetEl<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
   if (!el) throw new Error(`Missing element #${id}`);
@@ -200,7 +206,7 @@ async function main(): Promise<void> {
   const appControls = mustGetEl<HTMLDivElement>("app-controls");
   const app = mustGetEl<HTMLDivElement>("app");
 
-  const initial = fixtureFromHtml() ?? "purchase-order";
+  const initial = fixtureFromHtml() ?? getStoredFixture() ?? "purchase-order";
   let currentFixture: FixtureKey = initial;
 
   const rendererMode = getRendererMode();
@@ -235,6 +241,7 @@ async function main(): Promise<void> {
       selected: fixtureKey,
       rendererMode,
       onSelect: (k) => {
+        localStorage.setItem("fixture", k);
         void loadAndStart(k);
       },
       onReset: doReset,
