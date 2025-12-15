@@ -267,9 +267,24 @@ To ensure consistent behavior across renderers, this section defines the **stand
 
 #### 3.6.1 Layout Resolution Formula
 
+```typescript
+const hint = node.meta?.layout;
+const applicable = hint && isApplicable(node.kind, hint);
+const resolvedLayout = applicable ? hint : defaultLayoutFor(node.kind);
 ```
-layout = node.meta?.layout ?? defaultLayoutFor(node.kind)
+
+Or as a single expression:
+
 ```
+resolvedLayout = (isApplicable(node.kind, node.meta?.layout) ? node.meta.layout : null)
+                 ?? defaultLayoutFor(node.kind)
+```
+
+Where `isApplicable(kind, layout)` is **renderer-defined** with normative constraints:
+
+- For layout tokens listed in §3.6.4 Applicability Matrix, the renderer **MUST** treat matrix checkmarks as applicable and matrix dashes as not applicable.
+- For tokens **not** listed in the matrix, the renderer **MAY** treat them as applicable for any kind (this enables renderer-specific extensions).
+- "Unknown" means "unknown to the renderer", not "unknown to this spec".
 
 Where `defaultLayoutFor` returns:
 
@@ -281,7 +296,14 @@ Where `defaultLayoutFor` returns:
 | Scalar | `null` (renderer chooses based on type/constraints) |
 | Reference | `null` (renderer chooses) |
 
-If `node.meta.layout` is present but empty string, treat as missing (use default).
+**Edge cases:**
+- If `node.meta.layout` is empty string or whitespace-only → treat as missing (use default)
+- If `node.meta.layout` is not recognized or not supported by the renderer → use default
+- If `node.meta.layout` is not applicable to `node.kind` per the matrix → use default (not the hint)
+
+**Token normalization:** Layout tokens SHOULD be trimmed; empty-after-trim counts as missing.
+
+This formula makes the applicability matrix (§3.6.4) normative for well-known tokens, while allowing renderer-specific extensions.
 
 #### 3.6.2 Layout Context Object
 
@@ -309,23 +331,19 @@ type LayoutContext = {
 The renderer selects a concrete layout strategy:
 
 ```
-strategy = selectLayout(node.kind, layout, layoutContext)
+strategy = selectLayout(node.kind, resolvedLayout, layoutContext)
 ```
 
-**Selection rules:**
+**Note:** By this point, `resolvedLayout` is already a valid, applicable layout (or default). Kind mismatches and unknown values were filtered out by the resolution formula (§3.6.1).
 
-1. **Kind mismatch → ignore hint, use default.**
-   If `layout` is not applicable to `node.kind`, ignore it.
-   - `layout: "grid"` on a Scalar → ignored, use default Scalar rendering
-   - `layout: "tabs"` on a List → ignored, use `"vertical"`
+**Context-based adjustments:**
 
-2. **Context override.**
-   Context may override the resolved layout:
-   - `isInGridCell: true` + Struct `layout: "vertical"` → renderer MAY use `"inline"` instead
-   - `viewportHints.width: "narrow"` + List `layout: "grid"` → renderer MAY fall back to `"vertical"`
+The renderer MAY adjust the resolved layout based on context:
 
-3. **Unknown values → use default.**
-   If `layout` is a string the renderer doesn't recognize, use the default for that node kind.
+- `isInGridCell: true` + Struct `resolvedLayout: "vertical"` → renderer MAY use `"inline"` instead
+- `viewportHints.width: "narrow"` + List `resolvedLayout: "grid"` → renderer MAY fall back to `"vertical"` (see §4.5.3 Allowed Nondeterminism)
+
+These adjustments are implementation choices, not projection-driven.
 
 #### 3.6.4 Applicability Matrix
 
@@ -347,7 +365,7 @@ Which layouts apply to which node kinds:
 
 *Scalar layouts are future/speculative.
 
-A `—` means the layout is **not applicable** to that node kind and MUST be ignored.
+A `—` means the layout is **not applicable** to that node kind and MUST resolve to the default for that kind.
 
 ---
 
@@ -385,7 +403,7 @@ Columns are derived from the item's structure:
 | `Struct` | One column per field |
 | `Union` | Discriminator column + variant field columns |
 | `Scalar` | Single "Value" column |
-| `List` | Single column (nested list, probably falls back) |
+| `List` | N/A (falls back to vertical per §4.5.1) |
 | `Reference` | Single "Reference" column |
 
 #### 4.2.1 Struct Items
@@ -459,7 +477,7 @@ Renders as:
 └─────┴────────────┴────────┴───────┴──────────────┴────────┘
 ```
 
-Variant columns show/hide based on the discriminator value in that row.
+**Column stability:** All variant columns are always present in the header row. Variant cells are **empty or inert** when their variant is inactive; column headers remain stable regardless of row values (see §4.2.5, §7.1.1 constraint 7).
 
 #### 4.2.3 Scalar Items
 
@@ -494,7 +512,7 @@ This ensures grid headers are stable and do not thrash when data changes.
    Column structure is determined by examining the `item` node of the List projection. The current value (empty list, partial data, full data) MUST NOT affect which columns exist or their order.
 
 2. **Stable column order.**
-   For Struct items, column order MUST follow the field order in the canonical projection JSON. If the projection uses an explicit `fieldOrder` array, that order is authoritative. Otherwise, the order of keys in the `fields` object is used.
+   For Struct items, column order MUST follow the key order in the canonical projection JSON's `fields` object.
 
    ```json
    {
@@ -506,6 +524,8 @@ This ensures grid headers are stable and do not thrash when data changes.
      }
    }
    ```
+
+   **Note:** This relies on JSON key order preservation, which is standard in modern parsers. A future schema extension could add an explicit `fieldOrder` array for tooling that doesn't preserve key order.
 
 3. **Path-based column identity.**
    Each column MUST be identified by its `projectionPath`, not by label or other mutable properties. This ensures:
@@ -536,34 +556,55 @@ There is no fundamental reason to prohibit relations in grid layout. The current
 
 Engine Issues map to grid cells deterministically via their existing path properties. **No grid-specific Issue format is required.**
 
+**Path encoding (normative):**
+
+`valuePath` and `projectionPath` strings are slash-delimited sequences of segments:
+- Field names appear as literal strings (e.g., `name`, `items`)
+- List indices appear as base-10 integers (e.g., `0`, `2`, `15`)
+- The path starts with `/` (root)
+
+```
+/items/2/contact/name
+ ↑     ↑ ↑       ↑
+ field index field field
+```
+
+If the engine provides structured path segments (e.g., `["items", 2, "contact", "name"]`), renderers SHOULD use those directly rather than string parsing.
+
 **Mapping rules:**
 
-1. **Row index** is extracted from the list index in `valuePath`:
+The grid renderer knows its list's `valuePath` prefix (call it `listValuePath`). All mapping is **relative to that list**.
+
+1. **Row index** is the segment **immediately after** `listValuePath`:
    ```
-   valuePath: /items/2/name
-                     ↑
-                   Row 2
+   listValuePath: /orders/2/items
+   Issue valuePath: /orders/2/items/5/qty
+                                   ↑
+                                 Row 5 (not row 2)
    ```
 
-2. **Column identity** is determined by matching the field's `projectionPath`:
+2. **Column identity** is determined by the path suffix after the row index:
    ```
-   valuePath: /items/2/name
-                       ↑
-              Column: "name" (matched via projectionPath)
+   listValuePath: /orders/2/items
+   Issue valuePath: /orders/2/items/5/qty
+                                     ↑
+                          Column: "qty"
    ```
 
-3. **Relation errors** use `relatedValuePaths` to identify affected cells:
+3. **Relation errors** use `relatedValuePaths` (also relative to `listValuePath`):
    ```
    Issue:
      code: "relation_failed"
-     valuePath: /items/2
-     relatedValuePaths: ["/items/2/start_date", "/items/2/end_date"]
+     valuePath: /orders/2/items/5
+     relatedValuePaths: ["/orders/2/items/5/start_date", "/orders/2/items/5/end_date"]
 
    Maps to:
-     Row: 2
+     Row: 5
      Highlighted cells: "start_date", "end_date"
-     Error message: associated with row 2
+     Error message: associated with row 5
    ```
+
+This relative mapping prevents bugs when grids render nested lists.
 
 **Renderer behavior:**
 
@@ -571,6 +612,40 @@ Engine Issues map to grid cells deterministically via their existing path proper
 - Renderers SHOULD mark specific cells referenced in `relatedValuePaths`
 - Renderers MAY show error messages in a row-level error zone or as cell tooltips
 - The mapping is deterministic: same Issue, same projection, same grid highlighting
+
+#### 4.3.2 Cursor Focus in Grids
+
+The cursor path may correspond to a node that has **no direct focus target** in the current layout representation. This occurs when rendering:
+
+- Container nodes (Struct, List) that have no dedicated editor
+- Summary renderings (collapsed content)
+- Popover/modal editors (editor is not inline)
+- Nodes rendered as non-editable text in grid cells
+
+**Note:** The engine's cursor traversal skips Inactive nodes and normalizes MoveCursor requests to valid targets. If the cursor path points to an Inactive node, this is typically a **stale cursor** due to a value transition (rare).
+
+**Normative focus resolution:**
+
+1. Attempt to find the editor element for `cursor.projectionPath`
+2. If the element exists and is focusable, focus it
+3. If the element does not exist or is not focusable due to layout representation:
+   - First, try to focus the nearest focusable **descendant** within that cursor node's rendered subtree
+   - If none exists, focus the nearest rendered **actionable ancestor** (often the Union discriminator for that row)
+
+**Example:**
+
+```
+cursor.projectionPath: /items/2/contact
+                            ↑
+                       Struct (no direct editor)
+
+Resolution:
+  /items/2/contact           ← No single editor for Struct
+  /items/2/contact/type      ← First focusable descendant: the discriminator
+                             ← Focus the "type" dropdown in row 2
+```
+
+**Rationale:** This keeps cursor authority intact even when layout hides or summarizes nodes. The renderer must focus something actionable within or leading to the target—not silently drop focus or focus an arbitrary element.
 
 ### 4.4 Nested Structures in Cells
 
@@ -609,7 +684,11 @@ A List with `layout: "grid"` is grid-compatible if its `item` projection matches
 | **Union** | ✓ Conditional | Only if renderer supports union-as-columns |
 | **List** | ✗ Never | N/A (would create nested grids) |
 
-**Key constraint:** Columns are derived only from the **first level** of the item structure. Nested Structs, Unions, or Lists within fields render as embedded content within cells—they do not explode into additional columns.
+**Key constraint:** Columns are derived from the **immediate fields** of the item structure:
+
+- For `List<Struct>`, base columns are the Struct's immediate fields.
+- A field whose kind is `Union` **MAY** expand into a discriminator column plus variant-field columns (see §4.2.2).
+- Deeper nesting beyond that (e.g., a Union inside a variant Struct, or a Struct inside a field Struct) does **not** expand into additional columns—such content renders embedded within cells.
 
 #### 4.5.2 Deterministic Fallback Rule
 
@@ -635,7 +714,8 @@ Renderers MAY fall back from grid to vertical based on these runtime conditions.
 
 1. **SHOULD** document their fallback behavior
 2. **SHOULD** provide consistent behavior within a session
-3. **MAY** vary across viewport sizes, devices, or accessibility modes
+3. **SHOULD** keep the chosen layout stable for the duration of the session, or **at minimum** while an element inside that list is focused (protects typing focus and reduces layout thrash on resize)
+4. **MAY** vary across viewport sizes, devices, or accessibility modes
 
 Projection authors should understand that `layout: "grid"` expresses **intent**, and the renderer will honor it when conditions permit.
 
@@ -722,11 +802,17 @@ This would allow renderers to use the value of the `id` field as a stable DOM ke
 
 For v0.1, this is deferred. Index-based row identity is sufficient and matches engine semantics.
 
+### 4.7 List Operations in Grid Layout
+
+**Grid layout does not change `ListAdd`/`ListRemove` semantics**; only the visual placement of controls differs by renderer.
+
+The engine dispatches `ListAdd` and `ListRemove` actions identically regardless of layout. A grid renderer may present these controls differently (e.g., toolbar buttons, row-level action cells, keyboard shortcuts), but the underlying actions remain unchanged.
+
 ---
 
-## 5. Combining Layout Hints
+## 5. Per-Node Hints in Subtrees
 
-Layout hints compose naturally through the tree:
+Layout hints apply independently at each node in the tree:
 
 ```json
 {
@@ -829,14 +915,23 @@ The following constraints ensure that layout hints remain purely presentational 
 
 6. **MUST preserve engine cursor authority.** Layout changes only *how* a node is visually located and focused, not *which* nodes are cursor-valid. The engine remains the sole authority on cursor position and cursor-valid nodes.
 
-7. **MUST preserve "Inactive does not render".** In grid layouts, columns for inactive Union variants are UI-only placeholders. The renderer **MUST NOT** render editors (inputs, selects, etc.) for inactive nodes. A column header may exist, but cells for inactive variants must be empty or disabled—no interaction points for nodes the engine has pruned.
+7. **MUST preserve "Inactive does not render".** In grid layouts, columns for inactive Union variants are UI-only placeholders. The renderer **MUST NOT** render any focusable element that would dispatch actions for an Inactive node.
 
-   **Example:** In a grid row where `type = "person"`, the "Company: Tax ID" column cell must be empty. Rendering an `<input>` there would create UI for an Inactive node, violating engine authority.
+   **Normative:** For an Inactive node cell, the renderer MUST render exactly one of:
+   - An empty cell (no content)
+   - Non-interactive text (e.g., a dash `—` or empty string)
+   - An inert placeholder element with `aria-hidden="true"` and **no form controls**
+
+   **Rationale:** This explicitly forbids `<input disabled>` because disabled inputs may still be focusable or discoverable by assistive technology (platform-dependent). The goal is zero interaction surface for pruned nodes.
+
+   **Example:** In a grid row where `type = "person"`, the "Company: Tax ID" column cell must be empty or inert.
 
    ```
    │ Type       │ Person: Name │ Company: Tax ID │
    ├────────────┼──────────────┼─────────────────┤
-   │ [person▾]  │ [__________] │ (empty/disabled)│  ← Correct
+   │ [person▾]  │ [__________] │ —               │  ← Correct (inert text)
+   │ [person▾]  │ [__________] │                 │  ← Correct (empty)
+   │ [person▾]  │ [__________] │ [disabled input]│  ← VIOLATION
    │ [person▾]  │ [__________] │ [__________]    │  ← VIOLATION
    ```
 
