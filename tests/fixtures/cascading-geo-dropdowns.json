@@ -1,0 +1,661 @@
+{
+  "version": "1.0.0",
+  "meta": {
+    "label": "Cascading Geographic Dropdowns",
+    "description": "6-level nested Union hierarchy for stress-testing cascading dropdown rendering"
+  },
+  "root": {
+    "id": "geo_root",
+    "kind": "Union",
+    "discriminator": "continent",
+    "meta": { "label": "Continent" },
+    "variants": {
+      "europe": {
+        "id": "continent_europe",
+        "kind": "Struct",
+        "meta": { "label": "Europe" },
+        "required": ["country"],
+        "fields": {
+          "country": {
+            "id": "europe_country",
+            "kind": "Union",
+            "discriminator": "country",
+            "meta": { "label": "Country" },
+            "variants": {
+              "germany": {
+                "id": "country_germany",
+                "kind": "Struct",
+                "meta": { "label": "Germany" },
+                "required": ["region"],
+                "fields": {
+                  "region": {
+                    "id": "germany_region",
+                    "kind": "Union",
+                    "discriminator": "region",
+                    "meta": { "label": "State (Bundesland)" },
+                    "variants": {
+                      "bavaria": {
+                        "id": "region_bavaria",
+                        "kind": "Struct",
+                        "meta": { "label": "Bavaria" },
+                        "required": ["city"],
+                        "fields": {
+                          "city": {
+                            "id": "bavaria_city",
+                            "kind": "Union",
+                            "discriminator": "city",
+                            "meta": { "label": "City" },
+                            "variants": {
+                              "munich": {
+                                "id": "city_munich",
+                                "kind": "Struct",
+                                "meta": { "label": "Munich" },
+                                "required": ["district"],
+                                "fields": {
+                                  "district": {
+                                    "id": "munich_district",
+                                    "kind": "Union",
+                                    "discriminator": "district",
+                                    "meta": { "label": "District (Stadtbezirk)" },
+                                    "variants": {
+                                      "altstadt": {
+                                        "id": "district_altstadt",
+                                        "kind": "Struct",
+                                        "meta": { "label": "Altstadt-Lehel" },
+                                        "required": ["area"],
+                                        "fields": {
+                                          "area": {
+                                            "id": "altstadt_area",
+                                            "kind": "Union",
+                                            "discriminator": "area",
+                                            "meta": { "label": "Area" },
+                                            "variants": {
+                                              "marienplatz": {
+                                                "id": "area_marienplatz",
+                                                "kind": "Struct",
+                                                "meta": { "label": "Marienplatz" },
+                                                "required": ["code"],
+                                                "fields": {
+                                                  "code": {
+                                                    "id": "marienplatz_code",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Area Code" },
+                                                    "required": true,
+                                                    "scalar": { "type": "string" }
+                                                  },
+                                                  "zone_type": {
+                                                    "id": "marienplatz_zone",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Zone Type" },
+                                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                                  }
+                                                }
+                                              },
+                                              "viktualienmarkt": {
+                                                "id": "area_viktualienmarkt",
+                                                "kind": "Struct",
+                                                "meta": { "label": "Viktualienmarkt" },
+                                                "required": ["code"],
+                                                "fields": {
+                                                  "code": {
+                                                    "id": "viktualienmarkt_code",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Area Code" },
+                                                    "required": true,
+                                                    "scalar": { "type": "string" }
+                                                  },
+                                                  "zone_type": {
+                                                    "id": "viktualienmarkt_zone",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Zone Type" },
+                                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "maxvorstadt": {
+                                        "id": "district_maxvorstadt",
+                                        "kind": "Struct",
+                                        "meta": { "label": "Maxvorstadt" },
+                                        "required": ["area"],
+                                        "fields": {
+                                          "area": {
+                                            "id": "maxvorstadt_area",
+                                            "kind": "Union",
+                                            "discriminator": "area",
+                                            "meta": { "label": "Area" },
+                                            "variants": {
+                                              "university": {
+                                                "id": "area_university",
+                                                "kind": "Struct",
+                                                "meta": { "label": "University Quarter" },
+                                                "required": ["code"],
+                                                "fields": {
+                                                  "code": {
+                                                    "id": "university_code",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Area Code" },
+                                                    "required": true,
+                                                    "scalar": { "type": "string" }
+                                                  },
+                                                  "zone_type": {
+                                                    "id": "university_zone",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Zone Type" },
+                                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                                  }
+                                                }
+                                              },
+                                              "museum": {
+                                                "id": "area_museum",
+                                                "kind": "Struct",
+                                                "meta": { "label": "Museum Quarter" },
+                                                "required": ["code"],
+                                                "fields": {
+                                                  "code": {
+                                                    "id": "museum_code",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Area Code" },
+                                                    "required": true,
+                                                    "scalar": { "type": "string" }
+                                                  },
+                                                  "zone_type": {
+                                                    "id": "museum_zone",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Zone Type" },
+                                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "nuremberg": {
+                                "id": "city_nuremberg",
+                                "kind": "Struct",
+                                "meta": { "label": "Nuremberg" },
+                                "required": ["district"],
+                                "fields": {
+                                  "district": {
+                                    "id": "nuremberg_district",
+                                    "kind": "Union",
+                                    "discriminator": "district",
+                                    "meta": { "label": "District" },
+                                    "variants": {
+                                      "altstadt_nue": {
+                                        "id": "district_altstadt_nue",
+                                        "kind": "Struct",
+                                        "meta": { "label": "Altstadt" },
+                                        "required": ["area"],
+                                        "fields": {
+                                          "area": {
+                                            "id": "altstadt_nue_area",
+                                            "kind": "Union",
+                                            "discriminator": "area",
+                                            "meta": { "label": "Area" },
+                                            "variants": {
+                                              "hauptmarkt": {
+                                                "id": "area_hauptmarkt",
+                                                "kind": "Struct",
+                                                "meta": { "label": "Hauptmarkt" },
+                                                "required": ["code"],
+                                                "fields": {
+                                                  "code": {
+                                                    "id": "hauptmarkt_code",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Area Code" },
+                                                    "required": true,
+                                                    "scalar": { "type": "string" }
+                                                  },
+                                                  "zone_type": {
+                                                    "id": "hauptmarkt_zone",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Zone Type" },
+                                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "berlin": {
+                        "id": "region_berlin",
+                        "kind": "Struct",
+                        "meta": { "label": "Berlin" },
+                        "required": ["district"],
+                        "fields": {
+                          "district": {
+                            "id": "berlin_district",
+                            "kind": "Union",
+                            "discriminator": "district",
+                            "meta": { "label": "District (Bezirk)" },
+                            "variants": {
+                              "mitte": {
+                                "id": "district_mitte",
+                                "kind": "Struct",
+                                "meta": { "label": "Mitte" },
+                                "required": ["area"],
+                                "fields": {
+                                  "area": {
+                                    "id": "mitte_area",
+                                    "kind": "Union",
+                                    "discriminator": "area",
+                                    "meta": { "label": "Area" },
+                                    "variants": {
+                                      "alexanderplatz": {
+                                        "id": "area_alexanderplatz",
+                                        "kind": "Struct",
+                                        "meta": { "label": "Alexanderplatz" },
+                                        "required": ["code"],
+                                        "fields": {
+                                          "code": {
+                                            "id": "alexanderplatz_code",
+                                            "kind": "Scalar",
+                                            "meta": { "label": "Area Code" },
+                                            "required": true,
+                                            "scalar": { "type": "string" }
+                                          },
+                                          "zone_type": {
+                                            "id": "alexanderplatz_zone",
+                                            "kind": "Scalar",
+                                            "meta": { "label": "Zone Type" },
+                                            "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "kreuzberg": {
+                                "id": "district_kreuzberg",
+                                "kind": "Struct",
+                                "meta": { "label": "Kreuzberg" },
+                                "required": ["area"],
+                                "fields": {
+                                  "area": {
+                                    "id": "kreuzberg_area",
+                                    "kind": "Union",
+                                    "discriminator": "area",
+                                    "meta": { "label": "Area" },
+                                    "variants": {
+                                      "kottbusser_tor": {
+                                        "id": "area_kottbusser_tor",
+                                        "kind": "Struct",
+                                        "meta": { "label": "Kottbusser Tor" },
+                                        "required": ["code"],
+                                        "fields": {
+                                          "code": {
+                                            "id": "kottbusser_tor_code",
+                                            "kind": "Scalar",
+                                            "meta": { "label": "Area Code" },
+                                            "required": true,
+                                            "scalar": { "type": "string" }
+                                          },
+                                          "zone_type": {
+                                            "id": "kottbusser_tor_zone",
+                                            "kind": "Scalar",
+                                            "meta": { "label": "Zone Type" },
+                                            "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "france": {
+                "id": "country_france",
+                "kind": "Struct",
+                "meta": { "label": "France" },
+                "required": ["region"],
+                "fields": {
+                  "region": {
+                    "id": "france_region",
+                    "kind": "Union",
+                    "discriminator": "region",
+                    "meta": { "label": "Region" },
+                    "variants": {
+                      "ile_de_france": {
+                        "id": "region_ile_de_france",
+                        "kind": "Struct",
+                        "meta": { "label": "Île-de-France" },
+                        "required": ["city"],
+                        "fields": {
+                          "city": {
+                            "id": "ile_de_france_city",
+                            "kind": "Union",
+                            "discriminator": "city",
+                            "meta": { "label": "City" },
+                            "variants": {
+                              "paris": {
+                                "id": "city_paris",
+                                "kind": "Struct",
+                                "meta": { "label": "Paris" },
+                                "required": ["arrondissement"],
+                                "fields": {
+                                  "arrondissement": {
+                                    "id": "paris_arrondissement",
+                                    "kind": "Union",
+                                    "discriminator": "arrondissement",
+                                    "meta": { "label": "Arrondissement" },
+                                    "variants": {
+                                      "arr_1": {
+                                        "id": "arr_1",
+                                        "kind": "Struct",
+                                        "meta": { "label": "1st Arrondissement" },
+                                        "required": ["quartier"],
+                                        "fields": {
+                                          "quartier": {
+                                            "id": "arr_1_quartier",
+                                            "kind": "Union",
+                                            "discriminator": "quartier",
+                                            "meta": { "label": "Quartier" },
+                                            "variants": {
+                                              "louvre": {
+                                                "id": "quartier_louvre",
+                                                "kind": "Struct",
+                                                "meta": { "label": "Louvre" },
+                                                "required": ["code"],
+                                                "fields": {
+                                                  "code": {
+                                                    "id": "louvre_code",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Area Code" },
+                                                    "required": true,
+                                                    "scalar": { "type": "string" }
+                                                  },
+                                                  "zone_type": {
+                                                    "id": "louvre_zone",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Zone Type" },
+                                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                                  }
+                                                }
+                                              },
+                                              "palais_royal": {
+                                                "id": "quartier_palais_royal",
+                                                "kind": "Struct",
+                                                "meta": { "label": "Palais-Royal" },
+                                                "required": ["code"],
+                                                "fields": {
+                                                  "code": {
+                                                    "id": "palais_royal_code",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Area Code" },
+                                                    "required": true,
+                                                    "scalar": { "type": "string" }
+                                                  },
+                                                  "zone_type": {
+                                                    "id": "palais_royal_zone",
+                                                    "kind": "Scalar",
+                                                    "meta": { "label": "Zone Type" },
+                                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "asia": {
+        "id": "continent_asia",
+        "kind": "Struct",
+        "meta": { "label": "Asia" },
+        "required": ["country"],
+        "fields": {
+          "country": {
+            "id": "asia_country",
+            "kind": "Union",
+            "discriminator": "country",
+            "meta": { "label": "Country" },
+            "variants": {
+              "japan": {
+                "id": "country_japan",
+                "kind": "Struct",
+                "meta": { "label": "Japan" },
+                "required": ["prefecture"],
+                "fields": {
+                  "prefecture": {
+                    "id": "japan_prefecture",
+                    "kind": "Union",
+                    "discriminator": "prefecture",
+                    "meta": { "label": "Prefecture" },
+                    "variants": {
+                      "tokyo": {
+                        "id": "prefecture_tokyo",
+                        "kind": "Struct",
+                        "meta": { "label": "Tokyo" },
+                        "required": ["ward"],
+                        "fields": {
+                          "ward": {
+                            "id": "tokyo_ward",
+                            "kind": "Union",
+                            "discriminator": "ward",
+                            "meta": { "label": "Ward" },
+                            "variants": {
+                              "shibuya": {
+                                "id": "ward_shibuya",
+                                "kind": "Struct",
+                                "meta": { "label": "Shibuya" },
+                                "required": ["code"],
+                                "fields": {
+                                  "code": {
+                                    "id": "shibuya_code",
+                                    "kind": "Scalar",
+                                    "meta": { "label": "Ward Code" },
+                                    "required": true,
+                                    "scalar": { "type": "string" }
+                                  },
+                                  "zone_type": {
+                                    "id": "shibuya_zone",
+                                    "kind": "Scalar",
+                                    "meta": { "label": "Zone Type" },
+                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                  }
+                                }
+                              },
+                              "shinjuku": {
+                                "id": "ward_shinjuku",
+                                "kind": "Struct",
+                                "meta": { "label": "Shinjuku" },
+                                "required": ["code"],
+                                "fields": {
+                                  "code": {
+                                    "id": "shinjuku_code",
+                                    "kind": "Scalar",
+                                    "meta": { "label": "Ward Code" },
+                                    "required": true,
+                                    "scalar": { "type": "string" }
+                                  },
+                                  "zone_type": {
+                                    "id": "shinjuku_zone",
+                                    "kind": "Scalar",
+                                    "meta": { "label": "Zone Type" },
+                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "americas": {
+        "id": "continent_americas",
+        "kind": "Struct",
+        "meta": { "label": "Americas" },
+        "required": ["country"],
+        "fields": {
+          "country": {
+            "id": "americas_country",
+            "kind": "Union",
+            "discriminator": "country",
+            "meta": { "label": "Country" },
+            "variants": {
+              "usa": {
+                "id": "country_usa",
+                "kind": "Struct",
+                "meta": { "label": "United States" },
+                "required": ["state"],
+                "fields": {
+                  "state": {
+                    "id": "usa_state",
+                    "kind": "Union",
+                    "discriminator": "state",
+                    "meta": { "label": "State" },
+                    "variants": {
+                      "california": {
+                        "id": "state_california",
+                        "kind": "Struct",
+                        "meta": { "label": "California" },
+                        "required": ["city"],
+                        "fields": {
+                          "city": {
+                            "id": "california_city",
+                            "kind": "Union",
+                            "discriminator": "city",
+                            "meta": { "label": "City" },
+                            "variants": {
+                              "los_angeles": {
+                                "id": "city_los_angeles",
+                                "kind": "Struct",
+                                "meta": { "label": "Los Angeles" },
+                                "required": ["code"],
+                                "fields": {
+                                  "code": {
+                                    "id": "los_angeles_code",
+                                    "kind": "Scalar",
+                                    "meta": { "label": "City Code" },
+                                    "required": true,
+                                    "scalar": { "type": "string" }
+                                  },
+                                  "zone_type": {
+                                    "id": "los_angeles_zone",
+                                    "kind": "Scalar",
+                                    "meta": { "label": "Zone Type" },
+                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                  }
+                                }
+                              },
+                              "san_francisco": {
+                                "id": "city_san_francisco",
+                                "kind": "Struct",
+                                "meta": { "label": "San Francisco" },
+                                "required": ["code"],
+                                "fields": {
+                                  "code": {
+                                    "id": "san_francisco_code",
+                                    "kind": "Scalar",
+                                    "meta": { "label": "City Code" },
+                                    "required": true,
+                                    "scalar": { "type": "string" }
+                                  },
+                                  "zone_type": {
+                                    "id": "san_francisco_zone",
+                                    "kind": "Scalar",
+                                    "meta": { "label": "Zone Type" },
+                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "new_york": {
+                        "id": "state_new_york",
+                        "kind": "Struct",
+                        "meta": { "label": "New York" },
+                        "required": ["city"],
+                        "fields": {
+                          "city": {
+                            "id": "new_york_city",
+                            "kind": "Union",
+                            "discriminator": "city",
+                            "meta": { "label": "City" },
+                            "variants": {
+                              "nyc": {
+                                "id": "city_nyc",
+                                "kind": "Struct",
+                                "meta": { "label": "New York City" },
+                                "required": ["code"],
+                                "fields": {
+                                  "code": {
+                                    "id": "nyc_code",
+                                    "kind": "Scalar",
+                                    "meta": { "label": "City Code" },
+                                    "required": true,
+                                    "scalar": { "type": "string" }
+                                  },
+                                  "zone_type": {
+                                    "id": "nyc_zone",
+                                    "kind": "Scalar",
+                                    "meta": { "label": "Zone Type" },
+                                    "scalar": { "type": "string", "enum": ["residential", "commercial", "mixed"] }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

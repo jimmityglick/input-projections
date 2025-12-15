@@ -30,7 +30,9 @@ type FixtureKey =
   | "empty-list"
   | "union-all-variants"
   | "grid-flat-rows"
-  | "grid-row-union";
+  | "grid-row-union"
+  | "cascading-geo-dropdowns"
+  | "torture-test";
 
 const FIXTURES: { key: FixtureKey; file: string; label: string }[] = [
   { key: "purchase-order", file: "purchase-order.json", label: "purchase-order" },
@@ -45,6 +47,8 @@ const FIXTURES: { key: FixtureKey; file: string; label: string }[] = [
   { key: "deep-nesting", file: "deep-nesting.json", label: "edge: deep nesting" },
   { key: "empty-list", file: "empty-list.json", label: "edge: empty list" },
   { key: "union-all-variants", file: "union-all-variants.json", label: "edge: union variants" },
+  { key: "cascading-geo-dropdowns", file: "cascading-geo-dropdowns.json", label: "edge: 6-level cascade" },
+  { key: "torture-test", file: "torture-test.json", label: "edge: torture test" },
 ];
 
 const FIXTURE_MODULES = import.meta.glob<{ default: ProjectionDefinition }>("../tests/fixtures/*.json");
