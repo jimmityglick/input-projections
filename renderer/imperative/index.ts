@@ -1,8 +1,8 @@
-import type { DispatchFn, Renderer } from "./types";
+import type { DispatchFn, Renderer } from "../types";
 import { clearCache } from "./cache";
 import { renderEngineState } from "./render";
 
-export function createRenderer(dispatch: DispatchFn): Renderer {
+export function createRendererImperative(dispatch: DispatchFn): Renderer {
   const cache = new Map<string, HTMLElement>();
 
   return {
@@ -14,4 +14,3 @@ export function createRenderer(dispatch: DispatchFn): Renderer {
     },
   };
 }
-

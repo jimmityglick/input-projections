@@ -1,5 +1,5 @@
-import type { Issue, Sigma } from "../dist/esm/index.js";
-import { projectionPathToString } from "../dist/esm/index.js";
+import type { Issue, Sigma } from "../../dist/esm/index.js";
+import { projectionPathToString } from "../../dist/esm/index.js";
 
 export function issuesForProjectionPath(sigma: Sigma, projectionPathString: string): Issue[] {
   const out: Issue[] = [];

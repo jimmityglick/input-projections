@@ -7,7 +7,7 @@ import { viewEngineState } from "./view";
 import { syncFocus } from "./focus";
 import { updateHUD } from "../hud";
 
-export function createRendererSnabbdom(dispatch: DispatchFn): Renderer {
+export function createRendererVDOM(dispatch: DispatchFn): Renderer {
   const ctx: VDOMContext = createVDOMContext(dispatch);
   let patchState: PatchState | null = null;
 

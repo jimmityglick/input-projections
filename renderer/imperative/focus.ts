@@ -1,6 +1,6 @@
-import type { Cursor } from "../dist/esm/index.js";
-import type { RenderContext } from "./types";
-import { projectionPathToString, findFirstActionable } from "./utils";
+import type { Cursor } from "../../dist/esm/index.js";
+import type { RenderContext } from "../types";
+import { projectionPathToString, findFirstActionable } from "../utils";
 
 export function syncFocus(cursor: Cursor, container: HTMLElement, ctx: RenderContext): void {
   const key = projectionPathToString(cursor.projectionPath);
@@ -14,4 +14,3 @@ export function syncFocus(cursor: Cursor, container: HTMLElement, ctx: RenderCon
   if (document.activeElement === target) return;
   target.focus({ preventScroll: true });
 }
-

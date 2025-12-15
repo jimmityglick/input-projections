@@ -1,21 +1,23 @@
 import { createEngine } from "../dist/esm/index.js";
 import type { ProjectionDefinition } from "../dist/esm/index.js";
-import { createRenderer } from "./index";
-import { createRendererSnabbdom } from "./snabbdom/index";
+import { createRendererImperative } from "./imperative/index";
+import { createRendererVDOM } from "./vdom/index";
 import { generateDemoValue } from "./demo_data";
 import { resolveProjectionIncludes } from "./resolve_includes";
 
-type RendererMode = "imperative" | "snabbdom";
+type RendererMode = "imperative" | "vdom";
 
 function getRendererMode(): RendererMode {
   const stored = localStorage.getItem("renderer");
-  if (stored === "snabbdom") return "snabbdom";
+  if (stored === "vdom") return "vdom";
+  // Back-compat for older localStorage values when this mode was named after the implementation.
+  if (stored === "snabbdom") return "vdom";
   if (stored === "imperative") return "imperative";
   return "imperative";
 }
 
 function createRendererByMode(mode: RendererMode, dispatch: (action: import("../dist/esm/index.js").Action) => import("../dist/esm/index.js").State) {
-  return mode === "snabbdom" ? createRendererSnabbdom(dispatch) : createRenderer(dispatch);
+  return mode === "vdom" ? createRendererVDOM(dispatch) : createRendererImperative(dispatch);
 }
 
 type FixtureKey =
@@ -186,7 +188,7 @@ function mountControls(
 
   const rendererInfo = document.createElement("p");
   rendererInfo.className = "secondary";
-  const modeLabel = state.rendererMode === "snabbdom" ? "snabbdom (VDOM)" : "imperative";
+  const modeLabel = state.rendererMode === "vdom" ? "vdom" : "imperative";
   rendererInfo.append("Renderer: ");
   const strong = document.createElement("strong");
   strong.textContent = modeLabel;
@@ -196,7 +198,7 @@ function mountControls(
   switchLink.textContent = "switch";
   switchLink.onclick = (e) => {
     e.preventDefault();
-    const next: RendererMode = state.rendererMode === "snabbdom" ? "imperative" : "snabbdom";
+    const next: RendererMode = state.rendererMode === "vdom" ? "imperative" : "vdom";
     localStorage.setItem("renderer", next);
     window.location.reload();
   };

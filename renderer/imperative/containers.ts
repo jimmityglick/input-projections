@@ -1,4 +1,4 @@
-import type { EngineValue, Sigma } from "../dist/esm/index.js";
+import type { EngineValue, Sigma } from "../../dist/esm/index.js";
 import type {
   CompiledListNode,
   CompiledNode,
@@ -6,8 +6,8 @@ import type {
   CompiledUnionNode,
   ProjectionPath,
   ValuePath,
-} from "../dist/esm/index.js";
-import type { RenderContext } from "./types";
+} from "../../dist/esm/index.js";
+import type { RenderContext } from "../types";
 import { getOrCreate } from "./cache";
 import { createErrorElements, issuesForProjectionPath } from "./errors";
 import {
@@ -18,7 +18,7 @@ import {
   reconcileChildren,
   setJudgmentClasses,
   valuePathToString,
-} from "./utils";
+} from "../utils";
 import { processNode } from "./traverse";
 import { renderScalarCell, renderReferenceCell } from "./scalars";
 

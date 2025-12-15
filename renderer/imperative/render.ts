@@ -1,9 +1,9 @@
-import type { Engine } from "../dist/esm/index.js";
-import type { RenderContext } from "./types";
-import { reconcileChildren } from "./utils";
+import type { Engine } from "../../dist/esm/index.js";
+import type { RenderContext } from "../types";
+import { reconcileChildren } from "../utils";
 import { processNode } from "./traverse";
 import { syncFocus } from "./focus";
-import { updateHUD } from "./hud";
+import { updateHUD } from "../hud";
 
 export function renderEngineState(engine: Engine, container: HTMLElement, ctx: RenderContext): void {
   const state = engine.getState();

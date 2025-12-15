@@ -46,7 +46,7 @@ This plan creates a *new*, parallel renderer that uses Snabbdom for diff/patch, 
 ## High-level approach
 
 1. Add Snabbdom as a dependency.
-2. Implement `createRendererSnabbdom(dispatch)` alongside the existing `createRenderer(dispatch)`.
+2. Implement `createRendererVDOM(dispatch)` alongside the existing `createRendererImperative(dispatch)`.
 3. Add a runtime toggle (query param or localStorage) in `renderer/main.ts` to select the renderer.
 4. Port view logic incrementally: Scalar/Reference → Struct → Union → List → Table view.
 5. Keep the existing renderer as a fallback until feature parity is reached.
@@ -55,15 +55,15 @@ This plan creates a *new*, parallel renderer that uses Snabbdom for diff/patch, 
 
 Keep the current renderer code as-is. Add a new “vdom renderer” module subtree:
 
-- `renderer/snabbdom/index.ts` — `createRendererSnabbdom(...)`
-- `renderer/snabbdom/patch.ts` — Snabbdom init + patch loop + mount handling
-- `renderer/snabbdom/view.ts` — `viewEngineState(state, ctx): VNode`
-- `renderer/snabbdom/components/*` — node-specific views
+- `renderer/vdom/index.ts` — `createRendererVDOM(...)`
+- `renderer/vdom/patch.ts` — Snabbdom init + patch loop + mount handling
+- `renderer/vdom/view.ts` — `viewEngineState(state, ctx): VNode`
+- `renderer/vdom/components/*` — node-specific views
   - `scalar.ts`, `reference.ts`, `struct.ts`, `union.ts`, `list.ts`, `table.ts`
-- `renderer/snabbdom/focus.ts` — focus sync helpers (cursor → DOM)
-- `renderer/snabbdom/errors.ts` — issue rendering helpers (sigma → VNodes)
+- `renderer/vdom/focus.ts` — focus sync helpers (cursor → DOM)
+- `renderer/vdom/helpers/errors.ts` — issue rendering helpers (sigma → VNodes)
 
-If the directory name `snabbdom/` feels too specific, use `vdom/` and keep Snabbdom details inside.
+We use `vdom/` as the directory name and keep Snabbdom details inside.
 
 ## Core technical decisions
 
@@ -128,7 +128,7 @@ Note: engine value paths are index-based; row deletion necessarily shifts indice
 Deliverables:
 
 - Add `snabbdom` dependency (and any modules we need).
-- Create `createRendererSnabbdom(dispatch)` that renders a placeholder view and patches correctly.
+- Create `createRendererVDOM(dispatch)` that renders a placeholder view and patches correctly.
 - Add a toggle in `renderer/main.ts` (e.g., `?renderer=snabbdom`).
 
 Acceptance:

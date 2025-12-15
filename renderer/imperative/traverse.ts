@@ -1,7 +1,7 @@
-import type { EngineValue, Sigma } from "../dist/esm/index.js";
-import type { CompiledNode, ProjectionPath, ValuePath } from "../dist/esm/index.js";
-import type { RenderContext } from "./types";
-import { projectionPathToString, valuePathToString } from "./utils";
+import type { EngineValue, Sigma } from "../../dist/esm/index.js";
+import type { CompiledNode, ProjectionPath, ValuePath } from "../../dist/esm/index.js";
+import type { RenderContext } from "../types";
+import { projectionPathToString, valuePathToString } from "../utils";
 import { renderScalar, renderReference } from "./scalars";
 import { renderList, renderStruct, renderUnion } from "./containers";
 
@@ -35,4 +35,3 @@ export function processNode(
   }
   return renderList(node, value, projectionPath, valuePath, projStr, judgment, sigma, ctx, label);
 }
-

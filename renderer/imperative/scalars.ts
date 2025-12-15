@@ -1,6 +1,6 @@
-import type { EngineValue, Sigma } from "../dist/esm/index.js";
-import type { CompiledReferenceNode, CompiledScalarNode } from "../dist/esm/index.js";
-import type { RenderContext } from "./types";
+import type { EngineValue, Sigma } from "../../dist/esm/index.js";
+import type { CompiledReferenceNode, CompiledScalarNode } from "../../dist/esm/index.js";
+import type { RenderContext } from "../types";
 import { getOrCreate } from "./cache";
 import { createErrorElements, hasRelatedIssueForProjectionPath, issuesForProjectionPath } from "./errors";
 import {
@@ -10,7 +10,7 @@ import {
   reconcileChildren,
   setJudgmentClasses,
   valuePathToString,
-} from "./utils";
+} from "../utils";
 
 function bindCursorFocus(el: HTMLElement, ctx: RenderContext): void {
   el.onfocus = (e) => {

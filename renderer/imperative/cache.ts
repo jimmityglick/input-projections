@@ -1,4 +1,4 @@
-export type DOMCache = Map<string, HTMLElement>;
+import type { DOMCache } from "../types";
 
 export function getOrCreate(
   cache: DOMCache,
@@ -15,4 +15,3 @@ export function getOrCreate(
 export function clearCache(cache: DOMCache): void {
   cache.clear();
 }
-
