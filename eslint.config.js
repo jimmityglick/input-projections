@@ -13,9 +13,9 @@ module.exports = [
     ],
   },
 
-  // Plain JS (repo scripts/tools)
+  // Plain JS (repo scripts/tools) - CommonJS
   {
-    files: ["**/*.{js,cjs,mjs}"],
+    files: ["**/*.{js,cjs}"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "commonjs",
@@ -29,9 +29,25 @@ module.exports = [
     },
   },
 
-  // TypeScript (future repo code)
+  // Plain JS (repo scripts/tools) - ESM
+  {
+    files: ["**/*.mjs"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+      },
+    },
+    ...js.configs.recommended,
+    rules: {
+      "no-console": "off",
+    },
+  },
+
+  // TypeScript (engine/library code) - type-aware
   ...tseslint.config({
-    files: ["**/*.{ts,tsx}"],
+    files: ["src/**/*.{ts,tsx}"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -50,7 +66,31 @@ module.exports = [
     ],
     rules: {
       "no-console": "off",
+      "@typescript-eslint/consistent-type-definitions": "off",
+      "@typescript-eslint/no-redundant-type-constituents": "off",
+      "@typescript-eslint/no-unnecessary-type-assertion": "off",
+      "@typescript-eslint/non-nullable-type-assertion-style": "off",
+    },
+  }),
+
+  // TypeScript (renderer) - syntax-only linting (handled by Vite for typechecking/build)
+  ...tseslint.config({
+    files: ["renderer/**/*.{ts,tsx}"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        ...globals.browser,
+      },
+    },
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      ...tseslint.configs.stylistic,
+    ],
+    rules: {
+      "no-console": "off",
+      "@typescript-eslint/consistent-type-definitions": "off",
     },
   }),
 ];
-

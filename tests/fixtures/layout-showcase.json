@@ -1,0 +1,263 @@
+{
+  "version": "1.0.0",
+  "meta": {
+    "label": "Layout Showcase",
+    "description": "Demonstrates meta.layout renderer hints (VDOM renderer v0.1)"
+  },
+  "root": {
+    "id": "layout_showcase",
+    "kind": "Struct",
+    "fields": {
+      "list_vertical": {
+        "id": "list_vertical",
+        "kind": "List",
+        "maxItems": 5,
+        "meta": {
+          "label": "List (vertical default)"
+        },
+        "item": {
+          "id": "list_vertical_item",
+          "kind": "Struct",
+          "fields": {
+            "label": {
+              "id": "list_vertical_label",
+              "kind": "Scalar",
+              "meta": { "label": "Label" },
+              "scalar": { "type": "string", "minLength": 1 }
+            },
+            "value": {
+              "id": "list_vertical_value",
+              "kind": "Scalar",
+              "meta": { "label": "Value" },
+              "scalar": { "type": "number", "min": 0 }
+            }
+          }
+        }
+      },
+      "list_grid": {
+        "id": "list_grid",
+        "kind": "List",
+        "maxItems": 5,
+        "meta": {
+          "label": "List (grid)",
+          "layout": "grid"
+        },
+        "item": {
+          "id": "list_grid_item",
+          "kind": "Struct",
+          "fields": {
+            "row_id": {
+              "id": "list_grid_row_id",
+              "kind": "Scalar",
+              "meta": { "label": "Row ID" },
+              "scalar": { "type": "string", "pattern": "^row_[0-9]{4}$" }
+            },
+            "status": {
+              "id": "list_grid_status",
+              "kind": "Scalar",
+              "meta": { "label": "Status" },
+              "scalar": { "type": "string", "enum": ["new", "in_progress", "done"] }
+            },
+            "entity": {
+              "id": "list_grid_entity",
+              "kind": "Union",
+              "discriminator": "type",
+              "default": "person",
+              "meta": { "label": "Entity" },
+              "variants": {
+                "person": {
+                  "id": "list_grid_person",
+                  "kind": "Struct",
+                  "fields": {
+                    "first_name": {
+                      "id": "list_grid_first_name",
+                      "kind": "Scalar",
+                      "meta": { "label": "First Name" },
+                      "scalar": { "type": "string", "minLength": 1 }
+                    },
+                    "last_name": {
+                      "id": "list_grid_last_name",
+                      "kind": "Scalar",
+                      "meta": { "label": "Last Name" },
+                      "scalar": { "type": "string", "minLength": 1 }
+                    }
+                  }
+                },
+                "company": {
+                  "id": "list_grid_company",
+                  "kind": "Struct",
+                  "fields": {
+                    "company_name": {
+                      "id": "list_grid_company_name",
+                      "kind": "Scalar",
+                      "meta": { "label": "Company Name" },
+                      "scalar": { "type": "string", "minLength": 1 }
+                    },
+                    "tax_id": {
+                      "id": "list_grid_tax_id",
+                      "kind": "Scalar",
+                      "meta": { "label": "Tax ID" },
+                      "scalar": { "type": "string", "pattern": "^[A-Z]{2}[0-9]{8}$" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "date_range": {
+        "id": "date_range",
+        "kind": "Struct",
+        "meta": {
+          "label": "Date Range (horizontal)",
+          "layout": "horizontal"
+        },
+        "fields": {
+          "start_date": {
+            "id": "start_date",
+            "kind": "Scalar",
+            "meta": { "label": "Start" },
+            "scalar": { "type": "string", "minLength": 1 }
+          },
+          "end_date": {
+            "id": "end_date",
+            "kind": "Scalar",
+            "meta": { "label": "End" },
+            "scalar": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "coords": {
+        "id": "coords",
+        "kind": "Struct",
+        "meta": {
+          "label": "Coordinates (inline)",
+          "layout": "inline"
+        },
+        "fields": {
+          "x": {
+            "id": "coord_x",
+            "kind": "Scalar",
+            "meta": { "label": "X" },
+            "scalar": { "type": "number" }
+          },
+          "y": {
+            "id": "coord_y",
+            "kind": "Scalar",
+            "meta": { "label": "Y" },
+            "scalar": { "type": "number" }
+          }
+        }
+      },
+      "payment_tabs": {
+        "id": "payment_tabs",
+        "kind": "Union",
+        "discriminator": "method",
+        "default": "card",
+        "meta": {
+          "label": "Payment Method (tabs)",
+          "layout": "tabs"
+        },
+        "variants": {
+          "card": {
+            "id": "payment_card",
+            "kind": "Struct",
+            "fields": {
+              "last4": {
+                "id": "card_last4",
+                "kind": "Scalar",
+                "meta": { "label": "Last 4" },
+                "scalar": { "type": "string", "pattern": "^[0-9]{4}$" }
+              },
+              "zip": {
+                "id": "card_zip",
+                "kind": "Scalar",
+                "meta": { "label": "ZIP" },
+                "scalar": { "type": "string", "pattern": "^[0-9]{5}$" }
+              }
+            }
+          },
+          "cash": {
+            "id": "payment_cash",
+            "kind": "Scalar",
+            "meta": { "label": "Cash" },
+            "scalar": { "type": "null" }
+          }
+        }
+      },
+      "contact_radio": {
+        "id": "contact_radio",
+        "kind": "Union",
+        "discriminator": "kind",
+        "meta": {
+          "label": "Contact (radio)",
+          "layout": "radio"
+        },
+        "variants": {
+          "email": {
+            "id": "contact_email",
+            "kind": "Struct",
+            "fields": {
+              "address": {
+                "id": "email_address",
+                "kind": "Scalar",
+                "meta": { "label": "Email" },
+                "scalar": { "type": "string", "pattern": "^[^@]+@[^@]+\\.[^@]+$" }
+              }
+            }
+          },
+          "sms": {
+            "id": "contact_sms",
+            "kind": "Struct",
+            "fields": {
+              "number": {
+                "id": "sms_number",
+                "kind": "Scalar",
+                "meta": { "label": "Phone" },
+                "scalar": { "type": "string", "pattern": "^[0-9]{10}$" }
+              }
+            }
+          }
+        }
+      },
+      "mode_segmented": {
+        "id": "mode_segmented",
+        "kind": "Union",
+        "discriminator": "mode",
+        "default": "basic",
+        "meta": {
+          "label": "Mode (segmented)",
+          "layout": "segmented"
+        },
+        "variants": {
+          "basic": {
+            "id": "mode_basic",
+            "kind": "Struct",
+            "fields": {
+              "enabled": {
+                "id": "basic_enabled",
+                "kind": "Scalar",
+                "meta": { "label": "Enabled" },
+                "scalar": { "type": "boolean" }
+              }
+            }
+          },
+          "advanced": {
+            "id": "mode_advanced",
+            "kind": "Struct",
+            "fields": {
+              "level": {
+                "id": "advanced_level",
+                "kind": "Scalar",
+                "meta": { "label": "Level" },
+                "scalar": { "type": "number", "min": 0, "max": 10 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

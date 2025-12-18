@@ -33,16 +33,6 @@ export type ViewNodeParams = {
   label?: string;
 };
 
-function judgmentClasses(judgment: Judgment): Record<string, boolean> {
-  return {
-    node: true,
-    "judgment-valid": judgment === "Valid",
-    "judgment-invalid": judgment === "Invalid",
-    "judgment-incomplete": judgment === "Incomplete",
-  };
-}
-
-
 export function viewNode(params: ViewNodeParams): VNode | null {
   const { node, value, projectionPath, valuePath, sigma, ctx, label } = params;
   const projStr = projectionPathToString(projectionPath);

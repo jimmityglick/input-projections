@@ -12,6 +12,7 @@ import { h } from "../patch";
 import { nodeIdFromProjectionPath, parseValuePath, valuePathToString } from "../../utils";
 import { issuesForProjectionPath, viewErrors } from "../helpers/errors";
 import { createFocusHandler } from "../helpers/handlers";
+import { resolveLayout } from "../layout";
 
 const UNSET = "__unset__";
 
@@ -62,46 +63,11 @@ export function viewUnion(
   label?: string,
 ): VNode {
   const idBase = nodeIdFromProjectionPath(projStr);
-  const selectId = `${idBase}-discriminator`;
 
   const discValuePath = [...valuePath, node.discriminator];
   const discValStr = valuePathToString(discValuePath);
 
   const selected = selectUnionVariant(node, value);
-
-  const options: VNode[] = [
-    h("option", { props: { value: UNSET, selected: selected === undefined } }, "(select variant)"),
-    ...node.variantOrder.map((key) =>
-      h("option", { props: { value: key, selected: key === selected } }, key)
-    ),
-  ];
-
-  const createChangeHandler = () => (e: Event) => {
-    const target = e.currentTarget as HTMLSelectElement;
-    const discVp = parseValuePath(discValStr);
-    const at = discVp.length > 0 ? discVp.slice(0, -1) : [];
-
-    if (target.value === UNSET) {
-      ctx.dispatch({ type: "Unset", at: discVp });
-      return;
-    }
-
-    ctx.dispatch({ type: "SelectVariant", at, variantKey: target.value });
-
-    const variantNode = node.variants[target.value];
-    if (variantNode?.kind === "Scalar" && variantNode.scalar.type === "null") {
-      ctx.dispatch({ type: "SetScalar", at: [...at, "data"], value: null });
-    }
-  };
-
-  const select = h("select", {
-    props: { id: selectId, value: selected ?? UNSET },
-    dataset: { projectionPath: projStr, valuePath: discValStr },
-    on: {
-      change: createChangeHandler(),
-      focus: createFocusHandler(ctx, projStr, discValStr),
-    },
-  }, options);
 
   const issues = issuesForProjectionPath(sigma, projStr);
   const errorVNodes = viewErrors(issues, `${idBase}_union`);
@@ -125,6 +91,156 @@ export function viewUnion(
   }
 
   const nodeLabel = label ?? node.meta?.label ?? "Union";
+  const layout = resolveLayout("Union", node.meta?.layout);
+
+  const unset = () => {
+    ctx.dispatch({ type: "Unset", at: parseValuePath(discValStr) });
+  };
+
+  const selectVariant = (variantKey: string) => {
+    ctx.dispatch({ type: "SelectVariant", at: valuePath, variantKey });
+
+    const variantNode = node.variants[variantKey];
+    if (variantNode?.kind === "Scalar" && variantNode.scalar.type === "null") {
+      ctx.dispatch({ type: "SetScalar", at: [...valuePath, "data"], value: null });
+    }
+  };
+
+  const content = h("div", contentChildren);
+  const errors = h("div.errors", errorVNodes);
+  const headerLabel =
+    layout === "dropdown"
+      ? h("label.node-label", { props: { htmlFor: `${idBase}-discriminator` } }, nodeLabel)
+      : h("span.node-label", nodeLabel);
+  const header = h("div.node-header", [headerLabel, h("code.node-path", projStr)]);
+
+  if (layout === "tabs") {
+    const tabButtons: VNode[] = [
+      h("button.tab", {
+        props: { type: "button" },
+        class: { active: selected === undefined },
+        dataset: { projectionPath: projStr, valuePath: discValStr },
+        on: { click: unset, focus: createFocusHandler(ctx, projStr, discValStr) },
+      }, "(select)"),
+      ...node.variantOrder.map((key) =>
+        h("button.tab", {
+          props: { type: "button" },
+          class: { active: key === selected },
+          dataset: { projectionPath: projStr, valuePath: discValStr },
+          on: { click: () => selectVariant(key), focus: createFocusHandler(ctx, projStr, discValStr) },
+        }, key)
+      ),
+    ];
+
+    return h("div", {
+      class: { ...judgmentClasses(judgment), "union-tabs": true },
+      dataset: { projectionPath: projStr, valuePath: valStr },
+      hook: { insert: createInsertHook(ctx, projStr) },
+    }, [
+      header,
+      h("div.control-row", [h("div.tab-bar", tabButtons)]),
+      errors,
+      content,
+    ]);
+  }
+
+  if (layout === "radio") {
+    const groupName = `${idBase}-radio`;
+    const radioOptions: VNode[] = [
+      h("label", [
+        h("input", {
+          props: { type: "radio", name: groupName, checked: selected === undefined, value: UNSET },
+          dataset: { projectionPath: projStr, valuePath: discValStr },
+          on: {
+            change: unset,
+            focus: createFocusHandler(ctx, projStr, discValStr),
+          },
+        }),
+        "(select)",
+      ]),
+      ...node.variantOrder.map((key) =>
+        h("label", [
+          h("input", {
+            props: { type: "radio", name: groupName, checked: key === selected, value: key },
+            dataset: { projectionPath: projStr, valuePath: discValStr },
+            on: {
+              change: () => selectVariant(key),
+              focus: createFocusHandler(ctx, projStr, discValStr),
+            },
+          }),
+          key,
+        ])
+      ),
+    ];
+
+    return h("div", {
+      class: { ...judgmentClasses(judgment), "union-radio": true },
+      dataset: { projectionPath: projStr, valuePath: valStr },
+      hook: { insert: createInsertHook(ctx, projStr) },
+    }, [
+      header,
+      h("div.control-row", [h("div.radio-group", radioOptions)]),
+      errors,
+      content,
+    ]);
+  }
+
+  if (layout === "segmented") {
+    const segments: VNode[] = [
+      h("button.segment", {
+        props: { type: "button" },
+        class: { active: selected === undefined },
+        dataset: { projectionPath: projStr, valuePath: discValStr },
+        on: { click: unset, focus: createFocusHandler(ctx, projStr, discValStr) },
+      }, "(select)"),
+      ...node.variantOrder.map((key) =>
+        h("button.segment", {
+          props: { type: "button" },
+          class: { active: key === selected },
+          dataset: { projectionPath: projStr, valuePath: discValStr },
+          on: { click: () => selectVariant(key), focus: createFocusHandler(ctx, projStr, discValStr) },
+        }, key)
+      ),
+    ];
+
+    return h("div", {
+      class: { ...judgmentClasses(judgment), "union-segmented": true },
+      dataset: { projectionPath: projStr, valuePath: valStr },
+      hook: { insert: createInsertHook(ctx, projStr) },
+    }, [
+      header,
+      h("div.control-row", [h("div.segmented-control", segments)]),
+      errors,
+      content,
+    ]);
+  }
+
+  // Default: dropdown
+  const selectId = `${idBase}-discriminator`;
+  const options: VNode[] = [
+    h("option", { props: { value: UNSET, selected: selected === undefined } }, "(select variant)"),
+    ...node.variantOrder.map((key) =>
+      h("option", { props: { value: key, selected: key === selected } }, key)
+    ),
+  ];
+
+  const createChangeHandler = () => (e: Event) => {
+    const target = e.currentTarget as HTMLSelectElement;
+    if (target.value === UNSET) {
+      unset();
+      return;
+    }
+    selectVariant(target.value);
+  };
+
+  const select = h("select", {
+    props: { id: selectId, value: selected ?? UNSET },
+    dataset: { projectionPath: projStr, valuePath: discValStr },
+    on: {
+      change: createChangeHandler(),
+      focus: createFocusHandler(ctx, projStr, discValStr),
+    },
+  }, options);
 
   return h("div", {
     class: judgmentClasses(judgment),
@@ -136,7 +252,7 @@ export function viewUnion(
       h("code.node-path", projStr),
     ]),
     h("div.control-row", [select]),
-    h("div.errors", errorVNodes),
-    h("div", contentChildren),
+    errors,
+    content,
   ]);
 }

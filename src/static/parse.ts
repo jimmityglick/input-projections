@@ -51,7 +51,12 @@ function parseMetaObject(
     return undefined;
   }
 
-  hasOnlyKeys(input, ["label", "description", "hint", "examples", "tags"], pointer, issues);
+  hasOnlyKeys(
+    input,
+    ["label", "description", "hint", "layout", "clearable", "examples", "tags"],
+    pointer,
+    issues,
+  );
   const out: MetaObject = {};
   if (input.label !== undefined) {
     if (typeof input.label !== "string") issues.push(issue("invalid_type", "label must be a string", `${pointer}/label`));
@@ -64,6 +69,14 @@ function parseMetaObject(
   if (input.hint !== undefined) {
     if (typeof input.hint !== "string") issues.push(issue("invalid_type", "hint must be a string", `${pointer}/hint`));
     else out.hint = input.hint;
+  }
+  if (input.layout !== undefined) {
+    if (typeof input.layout !== "string") issues.push(issue("invalid_type", "layout must be a string", `${pointer}/layout`));
+    else out.layout = input.layout;
+  }
+  if (input.clearable !== undefined) {
+    if (typeof input.clearable !== "boolean") issues.push(issue("invalid_type", "clearable must be a boolean", `${pointer}/clearable`));
+    else out.clearable = input.clearable;
   }
   if (input.examples !== undefined) {
     if (!Array.isArray(input.examples)) issues.push(issue("invalid_type", "examples must be an array", `${pointer}/examples`));

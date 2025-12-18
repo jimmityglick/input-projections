@@ -4,7 +4,6 @@ import type {
   CompiledNode,
   CompiledReferenceNode,
   CompiledScalarNode,
-  CompiledStructNode,
   CompiledUnionNode,
   EngineValue,
   ProjectionPath,
@@ -17,7 +16,7 @@ import type { Judgment } from "../view";
 import { h } from "../patch";
 import { nodeIdFromProjectionPath, parseValuePath, projectionPathToString, valuePathToString } from "../../utils";
 import { issuesForProjectionPath, viewErrors, computeAriaErrorAttrs } from "../helpers/errors";
-import { createFocusHandler, createSetScalarHandler, createUnsetHandler, createCheckboxHandler } from "../helpers/handlers";
+import { createFocusHandler, createSetScalarHandler, createCheckboxHandler } from "../helpers/handlers";
 
 const UNSET = "__unset__";
 
@@ -330,7 +329,6 @@ export function viewTable(
   columns: TableColumn[],
   label?: string,
 ): VNode {
-  const structItem = node.item as CompiledStructNode;
   const arr = Array.isArray(value) ? (value as EngineValue[]) : [];
   const hasUnion = columns.some((c) => c.type === "discriminator" || c.type === "variant");
 

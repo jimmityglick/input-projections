@@ -15,6 +15,10 @@ export function generateDemoValue(
       return generateGridFlatRows(spec);
     case "grid-row-union":
       return generateGridRowUnion(spec);
+    case "grid-full-power":
+      return generateGridFullPower(spec);
+    case "layout-showcase":
+      return generateLayoutShowcase();
     case "purchase-order":
       return generatePurchaseOrder();
     case "password-confirmation":
@@ -30,6 +34,142 @@ export function generateDemoValue(
     default:
       return null;
   }
+}
+
+function generateLayoutShowcase(): EngineValue {
+  return {
+    list_vertical: [
+      { label: "Alpha", value: 1 },
+      { label: "Beta", value: 2 },
+    ],
+    list_grid: [
+      {
+        row_id: "row_0001",
+        status: "new",
+        entity: {
+          type: "person",
+          data: { first_name: "Ada", last_name: "Lovelace" },
+        },
+      },
+      {
+        row_id: "row_0002",
+        status: "in_progress",
+        entity: {
+          type: "company",
+          data: { company_name: "Acme Corp", tax_id: "US12345678" },
+        },
+      },
+    ],
+    date_range: {
+      start_date: "2025-01-01",
+      end_date: "2025-01-31",
+    },
+    coords: { x: 12.34, y: 56.78 },
+    payment_tabs: {
+      method: "card",
+      data: { last4: "4242", zip: "94105" },
+    },
+    contact_radio: {
+      kind: "email",
+      data: { address: "user@example.com" },
+    },
+    mode_segmented: {
+      mode: "basic",
+      data: { enabled: true },
+    },
+  };
+}
+
+function generateGridFullPower(spec: DemoSeedSpec): EngineValue {
+  const requestedRows = spec.kind === "grid" ? spec.rows : 10;
+  const rows = Math.max(0, Math.min(500, Math.floor(requestedRows)));
+
+  const statuses = ["new", "triage", "in_progress", "blocked", "done"];
+  const priorities = [0, 1, 2, 3];
+  const owners = Array.from({ length: 12 }, (_, idx) => `user_${idx.toString().padStart(3, "0")}`);
+  const teams = ["team_ENG", "team_QAS", "team_DES", "team_OPS"];
+
+  const titles = [
+    "Fix login bug",
+    "Ship onboarding flow",
+    "Audit permissions",
+    "Improve performance",
+    "Document API",
+    "Reduce flakiness",
+    "Add monitoring",
+    "Upgrade dependencies",
+    "Refactor renderer",
+    "Remove dead code",
+    "Backfill data",
+    "Improve accessibility",
+  ];
+
+  const bugSeverities = ["p0", "p1", "p2", "p3"];
+  const components = ["comp_ui", "comp_api", "comp_data", "comp_auth"];
+
+  const featureAreas = ["ui", "api", "data", "docs"];
+  const featureEffort = [1, 2, 3, 5, 8, 13];
+
+  const opsEnvs = ["dev", "staging", "prod"];
+  const opsActions = ["reindex", "restart", "vacuum", "rotate_keys"];
+
+  const arr: EngineValue[] = [];
+  for (let i = 0; i < rows; i++) {
+    const id = `WI-${(i + 1).toString().padStart(4, "0")}`;
+
+    const dueDay = ((i % 28) + 1).toString().padStart(2, "0");
+    const dueMonth = ((Math.floor(i / 28) % 12) + 1).toString().padStart(2, "0");
+    const dueDate = `2025-${dueMonth}-${dueDay}`;
+
+    const kind = i % 3 === 0 ? "bug" : i % 3 === 1 ? "feature" : "ops";
+
+    let details: Record<string, EngineValue>;
+    if (kind === "bug") {
+      const data: Record<string, EngineValue> = {
+        severity: bugSeverities[i % bugSeverities.length],
+        repro: i % 2 === 0,
+        component: components[i % components.length],
+      };
+      if (i % 4 === 0) data.ticket = `TKT-${(i % 100000).toString().padStart(5, "0")}`;
+      if (i % 6 === 0) data.notes = "Intermittent in Safari";
+      details = { kind: "bug", data };
+    } else if (kind === "feature") {
+      const data: Record<string, EngineValue> = {
+        area: featureAreas[i % featureAreas.length],
+        effort_points: featureEffort[i % featureEffort.length],
+        customer_visible: i % 4 !== 0,
+      };
+      if (i % 5 === 0) data.epic_id = `EPIC-${(i % 10000).toString().padStart(4, "0")}`;
+      if (i % 7 === 0) data.requester_id = `cust_${(i % 10000).toString().padStart(4, "0")}`;
+      details = { kind: "feature", data };
+    } else {
+      const data: Record<string, EngineValue> = {
+        environment: opsEnvs[i % opsEnvs.length],
+        action: opsActions[i % opsActions.length],
+        scheduled: i % 3 === 0,
+      };
+      if (i % 6 === 0) data.runbook_id = `RBK-${(i % 10000).toString().padStart(4, "0")}`;
+      if (i % 4 === 0) data.oncall_id = `user_${((900 + i) % 1000).toString().padStart(3, "0")}`;
+      details = { kind: "ops", data };
+    }
+
+    const row: Record<string, EngineValue> = {
+      id,
+      title: titles[i % titles.length],
+      status: statuses[i % statuses.length],
+      priority: priorities[i % priorities.length],
+      owner_id: owners[i % owners.length],
+      details,
+    };
+
+    if (i % 2 === 0) row.team_id = teams[i % teams.length];
+    if (i % 3 !== 0) row.points = (i % 21) / 2;
+    if (i % 4 === 0) row.due_date = dueDate;
+    row.blocked = row.status === "blocked" || i % 11 === 0;
+
+    arr.push(row);
+  }
+  return arr;
 }
 
 function generateGridFlatRows(spec: DemoSeedSpec): EngineValue {

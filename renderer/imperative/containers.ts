@@ -382,7 +382,6 @@ function renderListAsTable(
   columns: TableColumn[],
   labelOverride?: string,
 ): HTMLElement {
-  const structItem = node.item as CompiledStructNode;
   const listValPathStr = valuePathToString(valuePath);
   const arr = Array.isArray(value) ? (value as EngineValue[]) : [];
   const hasUnion = columns.some((c) => c.type === "discriminator" || c.type === "variant");

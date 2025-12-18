@@ -23,7 +23,7 @@ function listJsonFiles(dirPath) {
 }
 
 // Built output from `npm run build`.
-// eslint-disable-next-line import/no-dynamic-require, global-require
+// eslint-disable-next-line global-require
 const { createEngine } = require("../dist/index.js");
 
 const repoRoot = path.resolve(__dirname, "..");

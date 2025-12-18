@@ -11,10 +11,11 @@ import type {
 import type { VDOMContext } from "../context";
 import type { Judgment, ViewNodeParams } from "../view";
 import { h } from "../patch";
-import { parseValuePath, valuePathToString } from "../../utils";
+import { parseValuePath } from "../../utils";
 import { issuesForProjectionPath, viewErrors } from "../helpers/errors";
 import { createFocusHandler } from "../helpers/handlers";
 import { buildTableColumns, viewTable } from "./table";
+import { resolveLayout } from "../layout";
 
 function judgmentClasses(judgment: Judgment): Record<string, boolean> {
   return {
@@ -99,10 +100,13 @@ export function viewList(
   viewNode: (params: ViewNodeParams) => VNode | null,
   label?: string,
 ): VNode {
-  // Check if this list should render as a table
-  const columns = buildTableColumns(node);
-  if (columns !== null) {
-    return viewTable(node, value, projectionPath, valuePath, projStr, valStr, judgment, sigma, ctx, columns, label);
+  const layout = resolveLayout("List", node.meta?.layout);
+  if (layout === "grid") {
+    const columns = buildTableColumns(node);
+    if (columns !== null) {
+      return viewTable(node, value, projectionPath, valuePath, projStr, valStr, judgment, sigma, ctx, columns, label);
+    }
+    console.warn(`List at ${projStr} requested layout=grid but is incompatible; falling back to vertical`);
   }
 
   const arr = Array.isArray(value) ? (value as EngineValue[]) : [];

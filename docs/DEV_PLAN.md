@@ -288,6 +288,7 @@ The grid discriminator UI in `table.ts` is currently hardcoded to `<select>`. It
 6. Union tabs/radio/segmented
 7. CSS styling
 8. Test fixtures + validation
+9. Update `docs/SPEC_COMPLIANCE.md` with actual implementation status
 
 **Deferred:** `cards` layout for Lists
 
@@ -306,3 +307,4 @@ The grid discriminator UI in `table.ts` is currently hardcoded to `<select>`. It
 - [ ] Union tabs/radio/segmented render correctly
 - [ ] Focus management works across all layouts
 - [ ] Inactive variant cells are empty/inert per §7.1.1
+- [ ] `docs/SPEC_COMPLIANCE.md` updated to reflect actual v0.1 status

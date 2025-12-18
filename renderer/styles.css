@@ -3,6 +3,7 @@
   --inspector-muted: rgba(0, 0, 0, 0.65);
   --inspector-invalid: #b71c1c;
   --inspector-incomplete: #8a6d00;
+  --inspector-accent: #1565c0;
 }
 
 #app-controls {
@@ -182,4 +183,84 @@ small.error {
 .grid-table small.error {
   font-size: 0.75rem;
   margin: 0;
+}
+
+/* Struct layout hints */
+.struct-horizontal {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: start;
+}
+
+.struct-horizontal > .node {
+  margin: 0;
+}
+
+.struct-inline {
+  display: inline-flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.struct-inline > .node {
+  margin: 0;
+}
+
+/* Union layout hints */
+.union-tabs .tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--inspector-border);
+}
+
+.union-tabs .tab {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+}
+
+.union-tabs .tab.active {
+  border-bottom-color: var(--inspector-accent);
+  font-weight: 600;
+}
+
+.union-radio .radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.union-radio .radio-group > label {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.segmented-control {
+  display: inline-flex;
+  border: 1px solid var(--inspector-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.segmented-control > .segment {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.segmented-control > .segment + .segment {
+  border-left: 1px solid var(--inspector-border);
+}
+
+.segmented-control > .segment.active {
+  background: var(--inspector-accent);
+  color: white;
 }

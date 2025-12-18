@@ -2,6 +2,10 @@
   "version": "1.0.0",
   "root": {
     "id": "address_section",
+    "meta": {
+      "label": "Address",
+      "layout": "horizontal"
+    },
     "kind": "Struct",
     "required": ["line1", "city", "postal_code"],
     "fields": {
@@ -32,4 +36,3 @@
     }
   }
 }
-

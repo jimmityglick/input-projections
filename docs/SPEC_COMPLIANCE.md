@@ -2,6 +2,8 @@
 
 Reference: `docs/META_LAYOUT_RENDERER_HINT_SPEC.md`
 
+**Scope note:** `meta.layout` is implemented in the VDOM renderer (`renderer/vdom/*`) only. The imperative renderer ignores layout hints and uses defaults.
+
 ## Status Legend
 - ✓ Implemented
 - ◐ Partial
@@ -16,7 +18,7 @@ Reference: `docs/META_LAYOUT_RENDERER_HINT_SPEC.md`
 |---------|---------|------|--------|-------|
 | **§3 Layout Hints by Node Kind** |||||
 | §3.1 | List: vertical | ✓ | | Default |
-| §3.1 | List: grid | ✓ | | |
+| §3.1 | List: grid | ✓ | | Requires `meta.layout: "grid"` + `gridCompatible` |
 | §3.1 | List: cards | — | planned | Deferred |
 | §3.2 | Struct: vertical | ✓ | | Default |
 | §3.2 | Struct: horizontal | ✓ | | |
@@ -39,15 +41,15 @@ Reference: `docs/META_LAYOUT_RENDERER_HINT_SPEC.md`
 | §3.6.4 | Applicability matrix | ✓ | | Well-known tokens enforced |
 | **§4 Grid Layout Deep Dive** |||||
 | §4.1 | Rotation model | ✓ | | Existing table.ts |
-| §4.2 | Column derivation table | ✓ | | |
+| §4.2 | Column derivation table | ◐ | | v0.1 supports `List<Struct>` only |
 | §4.2.1 | Struct item columns | ✓ | | |
 | §4.2.2 | Union field expansion | ✓ | | Discriminator + variant columns |
-| §4.2.3 | Scalar item columns | ✓ | | Single "Value" column |
-| §4.2.4 | Union item columns | ◐ | | Falls back to vertical |
+| §4.2.3 | Scalar item columns | — | planned | Not yet supported in grid view |
+| §4.2.4 | Union item columns | — | planned | Not yet supported in grid view |
 | §4.2.5 | Column stability guarantees | ✓ | | Projection-driven |
 | §4.3 | Relations in grids | — | planned | Currently returns null |
 | §4.3.1 | Issue mapping (listValuePath) | — | planned | Relative row index |
-| §4.3.2 | Cursor focus resolution | — | planned | Walk up to ancestor |
+| §4.3.2 | Cursor focus resolution | ◐ | planned | Focuses first actionable descendant only |
 | §4.4 | Nested structures in cells | ◐ | | Falls back, no popover |
 | §4.5.1 | gridCompatible predicate | ✓ | | buildTableColumns() |
 | §4.5.2 | Deterministic fallback | ✓ | | |
@@ -57,13 +59,13 @@ Reference: `docs/META_LAYOUT_RENDERER_HINT_SPEC.md`
 | §4.6.3 | Stable row keys (rowKeyField) | — | future | |
 | §4.7 | List operations unchanged | ✓ | | |
 | **§5 Per-Node Hints in Subtrees** |||||
-| §5 | Independent hints | ✓ | | Each node resolved separately |
+| §5 | Independent hints | ◐ | | Grid union discriminator is always dropdown (v0.1) |
 | **§6 Extensibility** |||||
 | §6 | Custom tokens allowed | ◐ | | Allowed but fall back to default |
 | **§7 Normative Constraints** |||||
 | §7.1.1 #5 | Action semantics unchanged | ✓ | | |
 | §7.1.1 #6 | Cursor authority preserved | ✓ | | |
-| §7.1.1 #7 | Inactive cell rendering | ◐ | | Empty cells; not aria-hidden |
+| §7.1.1 #7 | Inactive cell rendering | ✓ | | Empty cells (no controls) |
 | §7.2 | Engine ignores layout | ✓ | | Engine unchanged |
 | **§8 Examples** |||||
 | §8 | Example projections | ✓ | | layout-showcase.json |
@@ -78,10 +80,10 @@ Reference: `docs/META_LAYOUT_RENDERER_HINT_SPEC.md`
 
 | Status | Count |
 |--------|-------|
-| ✓ Implemented | 28 |
+| ✓ Implemented | 29 |
 | ◐ Partial | 6 |
 | — Not started (v0.1 deferred) | 12 |
-| N/A | 3 |
+| N/A | 2 |
 
 ---
 
@@ -107,4 +109,4 @@ Reference: `docs/META_LAYOUT_RENDERER_HINT_SPEC.md`
 
 | Version | Date | Changes |
 |---------|------|---------|
-| v0.1 | TBD | Initial implementation - core layout hints |
+| v0.1 | 2025-12-15 | Initial implementation - core layout hints |

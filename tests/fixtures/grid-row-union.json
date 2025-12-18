@@ -10,7 +10,8 @@
     "minItems": 0,
     "maxItems": 500,
     "meta": {
-      "label": "Data Grid"
+      "label": "Data Grid",
+      "layout": "grid"
     },
     "item": {
       "id": "grid_row",

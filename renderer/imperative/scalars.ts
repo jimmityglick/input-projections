@@ -9,7 +9,6 @@ import {
   parseValuePath,
   reconcileChildren,
   setJudgmentClasses,
-  valuePathToString,
 } from "../utils";
 
 function bindCursorFocus(el: HTMLElement, ctx: RenderContext): void {

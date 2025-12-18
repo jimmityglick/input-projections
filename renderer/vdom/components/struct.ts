@@ -9,8 +9,8 @@ import type {
 import type { VDOMContext } from "../context";
 import type { Judgment, ViewNodeParams } from "../view";
 import { h } from "../patch";
-import { valuePathToString } from "../../utils";
 import { issuesForProjectionPath, viewErrors } from "../helpers/errors";
+import { resolveLayout } from "../layout";
 
 function judgmentClasses(judgment: Judgment): Record<string, boolean> {
   return {
@@ -43,6 +43,7 @@ export function viewStruct(
   viewNode: (params: ViewNodeParams) => VNode | null,
   label?: string,
 ): VNode {
+  const layout = resolveLayout("Struct", node.meta?.layout);
   const idBase = projStr.replaceAll("/", "_");
   const issues = issuesForProjectionPath(sigma, projStr);
   const errorVNodes = viewErrors(issues, `${idBase}_struct`);
@@ -70,6 +71,13 @@ export function viewStruct(
 
   const legendText = label ?? node.meta?.label ?? "Struct";
 
+  const content =
+    layout === "horizontal"
+      ? h("div.struct-horizontal", childVNodes)
+      : layout === "inline"
+        ? h("div.struct-inline", childVNodes)
+        : h("div", childVNodes);
+
   return h("fieldset", {
     class: judgmentClasses(judgment),
     dataset: { projectionPath: projStr, valuePath: valStr },
@@ -77,6 +85,6 @@ export function viewStruct(
   }, [
     h("legend", legendText),
     h("div.errors", errorVNodes),
-    h("div", childVNodes),
+    content,
   ]);
 }

@@ -2,6 +2,8 @@ export type MetaObject = {
   label?: string;
   description?: string;
   hint?: string;
+  layout?: string;
+  clearable?: boolean;
   examples?: unknown[];
   tags?: string[];
 };
