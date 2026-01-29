@@ -1,0 +1,9 @@
+.cache
+node_modules/
+dist/
+build/
+coverage/
+.DS_Store
+repomix-output.xml
+.cache/
+renderer/dist/

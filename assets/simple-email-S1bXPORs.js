@@ -1,0 +1,1 @@
+const e="1.0.0",t={label:"Email Capture"},a={id:"email_node",kind:"Scalar",required:!0,scalar:{type:"string",pattern:"^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"}},s={version:e,meta:t,root:a};export{s as default,t as meta,a as root,e as version};

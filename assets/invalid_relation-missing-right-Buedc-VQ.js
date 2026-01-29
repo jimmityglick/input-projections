@@ -1,0 +1,1 @@
+const a="1.0.0",i={kind:"Struct",fields:{a:{kind:"Scalar",scalar:{type:"number"}},b:{kind:"Scalar",scalar:{type:"number"}}},relations:[{op:"eq",left:"a",label:"Missing right operand"}]},n={version:a,root:i};export{n as default,i as root,a as version};

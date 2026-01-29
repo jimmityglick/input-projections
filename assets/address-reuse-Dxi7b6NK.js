@@ -1,0 +1,1 @@
+const s="1.0.0",e={id:"address_reuse_root",kind:"Struct",required:["shipping","billing"],fields:{shipping:{$ref:"address-section.json"},billing:{$ref:"address-section.json"}}},i={version:s,root:e};export{i as default,e as root,s as version};

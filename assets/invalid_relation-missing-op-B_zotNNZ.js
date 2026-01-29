@@ -1,0 +1,1 @@
+const a="1.0.0",r={kind:"Struct",fields:{a:{kind:"Scalar",scalar:{type:"number"}},b:{kind:"Scalar",scalar:{type:"number"}}},relations:[{left:"a",right:"b",label:"Missing operator"}]},t={version:a,root:r};export{t as default,r as root,a as version};

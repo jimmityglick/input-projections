@@ -1,0 +1,1 @@
+const t="1.0.0",e={kind:"Struct",meta:{label:"Empty List"},fields:{items:{kind:"List",meta:{label:"Items"},maxItems:5,item:{kind:"Scalar",meta:{label:"Item"},scalar:{type:"string"}}}}},s={version:t,root:e};export{s as default,e as root,t as version};

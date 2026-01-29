@@ -1,0 +1,1 @@
+const t="1.0.0",a={kind:"Struct",fields:{a:{kind:"Scalar",scalar:{type:"string"}},b:{kind:"Scalar",scalar:{type:"string"}}},relations:[{op:"startsWith",left:"a",right:"b",label:"Unknown operator"}]},n={version:t,root:a};export{n as default,a as root,t as version};
