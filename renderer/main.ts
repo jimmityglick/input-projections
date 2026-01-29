@@ -189,8 +189,9 @@ function mountControls(
 
   const pages = document.createElement("p");
   pages.className = "secondary";
+  const base = import.meta.env.BASE_URL;
   pages.innerHTML =
-    'Quick pages: <a href="/purchase-order.html">purchase-order</a>, <a href="/password-confirmation.html">password-confirmation</a>, <a href="/price-range-filter.html">price-range-filter</a>, <a href="/grid-flat-rows.html">grid-flat-rows</a>, <a href="/grid-row-union.html">grid-row-union</a>, <a href="/grid-full-power.html">grid-full-power</a>, <a href="/edge-cases.html">edge-cases</a>';
+    `Quick pages: <a href="${base}purchase-order.html">purchase-order</a>, <a href="${base}password-confirmation.html">password-confirmation</a>, <a href="${base}price-range-filter.html">price-range-filter</a>, <a href="${base}grid-flat-rows.html">grid-flat-rows</a>, <a href="${base}grid-row-union.html">grid-row-union</a>, <a href="${base}grid-full-power.html">grid-full-power</a>, <a href="${base}edge-cases.html">edge-cases</a>`;
 
   const rendererInfo = document.createElement("p");
   rendererInfo.className = "secondary";

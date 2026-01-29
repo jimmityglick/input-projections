@@ -6,6 +6,7 @@ const rendererRoot = fileURLToPath(new URL(".", import.meta.url));
 const repoRoot = path.resolve(rendererRoot, "..");
 
 export default defineConfig({
+  base: "/input-projections/",
   root: rendererRoot,
   server: {
     fs: {
