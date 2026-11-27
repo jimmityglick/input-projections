@@ -203,3 +203,63 @@ test("save responses preserve the latest draft and write exactly the intended re
     }
   }
 });
+
+test("linked edits yield the same saved program in every order", async () => {
+  const endpoint = origin + "/api/festival";
+  const baseline = await (await fetch(endpoint)).json();
+  const expected = structuredClone(baseline);
+  const speaker = expected.speakers[0];
+  const oldID = speaker.id;
+  speaker.id = "renamed-speaker";
+  const assignments = [];
+  for (const [v, venue] of expected.venues.entries()) {
+    for (const [r, room] of venue.rooms.entries()) {
+      for (const [s, stage] of room.stages.entries()) {
+        for (const [i, slot] of stage.sessions.entries()) {
+          for (const [j, id] of slot.speakers.entries()) {
+            if (id !== oldID) continue;
+            slot.speakers[j] = speaker.id;
+            assignments.push([`/venues/${v}/rooms/${r}/stages/${s}/sessions/${i}/speakers/${j}`, speaker.id]);
+          }
+        }
+      }
+    }
+  }
+  const first = expected.venues[0].rooms[0].stages[0].sessions[0];
+  first.seats = 44;
+  first.format = {kind: "workshop", data: {reserved: 46, available: 48}};
+  const path = "/venues/0/rooms/0/stages/0/sessions/0";
+  const edits = {
+    catalog: [["/speakers/0/id", speaker.id]],
+    assignments,
+    format: [[path + "/format/kind", "workshop"], [path + "/format/data/available", 48], [path + "/format/data/reserved", 46]],
+    seats: [[path + "/seats", 44]],
+  };
+  function* orders(remaining) {
+    if (!remaining.length) yield [];
+    for (const key of remaining) {
+      for (const rest of orders(remaining.filter(k => k !== key))) yield [key, ...rest];
+    }
+  }
+  for (const order of orders(Object.keys(edits))) {
+    await openForm();
+    await run(`
+      const auto = document.querySelector('[role=switch]');
+      if (auto.checked) auto.click();
+      for (const [path, value] of arguments[0]) {
+        const control = document.querySelector('#app :is(input, select)[data-value-path="' + path + '"]');
+        control.value = String(value);
+        control.dispatchEvent(new Event(control.tagName === 'SELECT' ? 'change' : 'input', {bubbles:true}));
+      }
+      document.querySelector('#festival-save button').click();
+    `, order.flatMap(key => edits[key]));
+    for (let i = 0; i < 100 && await run("return document.querySelector('[role=status]').textContent === 'Saving…'"); i++) await delay(50);
+    const stored = await fetch(endpoint);
+    assert.deepEqual(await stored.json(), expected, order.join(" → "));
+    const reset = await fetch(endpoint, {
+      method: "PUT", headers: {"Content-Type": "application/json", "If-Match": stored.headers.get("ETag")},
+      body: JSON.stringify(baseline),
+    });
+    assert.equal(reset.status, 204);
+  }
+});

@@ -1,0 +1,5 @@
+# Festival editor decisions
+
+- **Returning to a variant.** Changing a workshop to a talk removes the workshop materials from the value. Switching back opens an empty workshop. Should the editor remember each branch’s unfinished draft for this editing session? The saved value would still contain only the selected branch.
+- **Renaming a referenced entity.** Editing a speaker ID leaves its session assignments pointing at the old ID. The server rejects the save until all references agree. Should editing a published ID be allowed, and if so should the application provide a rename operation that updates those references together?
+- **A save with no acknowledgement.** I simulated SQLite accepting a save and the response being lost. The browser reported the connection failure. When I restored the last acknowledged draft, the form said “Loaded saved program” while SQLite held the newer value. The draft comparison alone cannot establish what the server committed. Should the editor read the current revision and offer reconciliation, or require an explicit reload while retaining the local draft?
