@@ -9,6 +9,7 @@
     "test:engine": "npm run build && node --test tests/engine.test.js",
     "test": "npm run test:schema && npm run test:engine",
     "typecheck": "tsc -p tsconfig.json",
+    "test:festival": "npm run build:cjs && npm run renderer:build && node --test tests/browser/festival.test.js",
     "demo": "npm run build:cjs && npm run renderer:build && go run ./backend",
     "renderer:dev": "npm run build:esm && vite --config renderer/vite.config.mjs",
     "renderer:build": "npm run build:esm && vite build --config renderer/vite.config.mjs",

@@ -1,8 +1,10 @@
+import { stableStringify, type EngineValue } from "../dist/esm/shared/json.js";
+
 export function saveControls(
   name: string,
   endpoint: string,
   initialTag: string | null,
-  payload: () => unknown,
+  payload: () => EngineValue,
   isValid: () => boolean,
   initialStatus: string,
 ) {
@@ -25,13 +27,15 @@ export function saveControls(
   controls.append(save, label, status);
 
   let tag = initialTag;
-  let generation = 0;
-  let saved = 0;
+  // Compare JSON content, including entity keys, independent of object property order.
+  let current = tag && isValid() ? stableStringify(payload()) : undefined;
+  let saved = current;
+  let cleanStatus = initialStatus;
   let pending = false;
   let timer: number | undefined;
 
   function available() {
-    return !!tag && !pending && saved !== generation && isValid();
+    return !!tag && !pending && current !== undefined && current !== saved;
   }
   function schedule() {
     window.clearTimeout(timer);
@@ -39,14 +43,20 @@ export function saveControls(
     if (auto.checked && available()) timer = window.setTimeout(submit, 800);
   }
   function changed() {
-    generation++;
-    if (tag) status.textContent = isValid() ? "Unsaved changes" : "Draft incomplete or invalid — saving paused";
+    if (!tag) return;
+    current = isValid() ? stableStringify(payload()) : undefined;
+    showDraftStatus();
     schedule();
+  }
+  function showDraftStatus() {
+    if (pending) status.textContent = "Saving…";
+    else if (current === undefined) status.textContent = "Draft incomplete or invalid — saving paused";
+    else status.textContent = current === saved ? cleanStatus : "Unsaved changes";
   }
   async function submit() {
     window.clearTimeout(timer);
     if (!tag || !available()) return;
-    const submitted = generation;
+    const submitted = current;
     pending = true;
     save.disabled = true;
     status.textContent = "Saving…";
@@ -64,14 +74,14 @@ export function saveControls(
       tag = response.headers.get("ETag");
       if (!tag) throw new Error("Save response is missing its revision. Refresh to verify.");
       saved = submitted;
-      status.textContent = generation === submitted ? "Saved to SQLite" : "Newer edits are unsaved";
+      cleanStatus = "Saved to SQLite";
     } catch (error) {
       status.textContent = String(error);
     } finally {
       pending = false;
+      if (tag && (saved === submitted || current !== submitted)) showDraftStatus();
       save.disabled = !available();
-      // A failed generation waits for a new edit or an explicit retry.
-      if (generation !== submitted) schedule();
+      if (current !== submitted) schedule();
     }
   }
   save.onclick = submit;
