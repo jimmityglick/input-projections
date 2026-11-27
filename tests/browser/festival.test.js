@@ -5,6 +5,7 @@ const { spawn, execFileSync } = require("node:child_process");
 const { once } = require("node:events");
 const fs = require("node:fs/promises");
 const net = require("node:net");
+const { isDeepStrictEqual } = require("node:util");
 const path = require("node:path");
 const os = require("node:os");
 const { setTimeout: delay } = require("node:timers/promises");
@@ -130,5 +131,75 @@ test("Add opens the new entity and focuses its ID", async () => {
         bounds.top >= document.querySelector('#festival-save').getBoundingClientRect().bottom && bounds.bottom <= innerHeight];
     `, path);
     assert.deepEqual(result, [true, true, true], path);
+  }
+});
+
+test("save responses preserve the latest draft and write exactly the intended revisions", async t => {
+  const endpoint = origin + "/api/festival";
+  for (const auto of [false, true]) {
+    for (const accepted of [false, true]) {
+      for (const outcome of ["original", "submitted", "another valid edit", "incomplete"]) {
+        await t.test(`${auto ? "automatic" : "manual"}, ${accepted ? "accepted" : "rejected"}, then ${outcome}`, async () => {
+          await openForm();
+          const initial = await fetch(endpoint);
+          const base = await initial.json();
+          const submitted = {...base, name: base.name === "First edit" ? "New first edit" : "First edit"};
+          if (!accepted) submitted.budget = 1;
+          const latest = {
+            original: base,
+            submitted,
+            "another valid edit": {...base, name: base.name === "Second edit" ? "New second edit" : "Second edit"},
+            incomplete: {...base, name: ""},
+          }[outcome];
+
+          // Real HTTP and database; delay delivery of the first response to the UI.
+          await run(`
+            const [auto, submitted] = arguments;
+            const toggle = document.querySelector('[role=switch]');
+            if (toggle.checked !== auto) toggle.click();
+            window.edit = draft => {
+              for (const key of ['name', 'budget']) {
+                const input = document.querySelector('input[data-value-path="/' + key + '"]');
+                input.value = String(draft[key]);
+                input.dispatchEvent(new Event('input', {bubbles: true}));
+              }
+            };
+            const send = window.fetch;
+            window.puts = [];
+            window.fetch = async (...args) => {
+              const response = await send(...args);
+              if (args[1]?.method === "PUT") {
+                window.puts.push(response.status);
+                if (window.puts.length === 1) await new Promise(resolve => {window.release = resolve});
+              }
+              return response;
+            };
+            window.edit(submitted);
+            document.querySelector('#festival-save button').click();
+          `, auto, submitted);
+          for (let i = 0; i < 100 && !await run("return !!window.release"); i++) await delay(50);
+          await run("window.edit(arguments[0]); window.release()", latest);
+          const firstSaved = accepted ? submitted : base;
+          const shouldFollowUp = auto && outcome !== "submitted" && outcome !== "incomplete"
+            && !isDeepStrictEqual(latest, firstSaved);
+          const expected = shouldFollowUp ? latest : firstSaved;
+          const statuses = [accepted ? 204 : 422];
+          if (shouldFollowUp) statuses.push(204);
+          await delay(1000);
+          for (let i = 0; i < 100 && await run("return window.puts.length") < statuses.length; i++) await delay(50);
+          assert.deepEqual(await run("return window.puts"), statuses);
+          const state = await fetch(endpoint);
+          assert.equal(Number(JSON.parse(state.headers.get("ETag"))),
+            Number(JSON.parse(initial.headers.get("ETag"))) + Number(accepted) + Number(shouldFollowUp));
+          assert.deepEqual(await state.json(), expected);
+          assert.deepEqual(await run(`
+            return [document.querySelector('input[data-value-path="/name"]').value,
+              Number(document.querySelector('input[data-value-path="/budget"]').value),
+              document.querySelector('#festival-save button').disabled];
+          `), [latest.name, latest.budget,
+            outcome === "incomplete" || isDeepStrictEqual(latest, expected)]);
+        });
+      }
+    }
   }
 });
