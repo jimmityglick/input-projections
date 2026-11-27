@@ -32,3 +32,5 @@
 #program-form legend button::before { content: "▸ "; }
 #program-form legend button[aria-expanded=true]::before { content: "▾ "; }
 #program-form fieldset:has(> legend > button[aria-expanded=false]) > :not(legend) { display: none; }
+
+#program-form input[readonly] { background: #f0eee5; color: #455248; }

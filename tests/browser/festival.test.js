@@ -210,7 +210,7 @@ test("linked edits yield the same saved program in every order", async () => {
   const expected = structuredClone(baseline);
   const speaker = expected.speakers[0];
   const oldID = speaker.id;
-  speaker.id = "renamed-speaker";
+  speaker.name = "Renamed speaker";
   const assignments = [];
   for (const [v, venue] of expected.venues.entries()) {
     for (const [r, room] of venue.rooms.entries()) {
@@ -218,8 +218,9 @@ test("linked edits yield the same saved program in every order", async () => {
         for (const [i, slot] of stage.sessions.entries()) {
           for (const [j, id] of slot.speakers.entries()) {
             if (id !== oldID) continue;
-            slot.speakers[j] = speaker.id;
-            assignments.push([`/venues/${v}/rooms/${r}/stages/${s}/sessions/${i}/speakers/${j}`, speaker.id]);
+            const replacement = expected.speakers.find(person => !slot.speakers.includes(person.id)).id;
+            slot.speakers[j] = replacement;
+            assignments.push([`/venues/${v}/rooms/${r}/stages/${s}/sessions/${i}/speakers/${j}`, replacement]);
           }
         }
       }
@@ -230,7 +231,7 @@ test("linked edits yield the same saved program in every order", async () => {
   first.format = {kind: "workshop", data: {reserved: 46, available: 48}};
   const path = "/venues/0/rooms/0/stages/0/sessions/0";
   const edits = {
-    catalog: [["/speakers/0/id", speaker.id]],
+    catalog: [["/speakers/0/name", speaker.name]],
     assignments,
     format: [[path + "/format/kind", "workshop"], [path + "/format/data/available", 48], [path + "/format/data/reserved", 46]],
     seats: [[path + "/seats", 44]],
@@ -324,4 +325,95 @@ test("a connection error reads back the saved version and retains the draft", as
       assert.equal(stored.name, outcome === "never received" ? baseline.name : outcome === "superseded" ? "Another saved value" : name);
     });
   }
+});
+
+test("festival identity survives renames, validation failures and row shifts during save", async () => {
+  await openForm();
+  const endpoint = origin + "/api/festival";
+  const before = await (await fetch(endpoint)).json();
+  const base = before.speakers.length;
+  await run(`
+    const auto = document.querySelector('[role=switch]');
+    if (auto.checked) auto.click();
+    window.inputAt = p => document.querySelector('input[data-value-path="' + p + '"]');
+    window.editAt = (p, v) => {
+      const input = inputAt(p);
+      input.value = String(v);
+      input.dispatchEvent(new Event("input", {bubbles:true}));
+    };
+    window.addAt = p => document.querySelector('button[data-value-path="' + p + '"]').click();
+    window.saveForm = () => document.querySelector('#festival-save button').click();
+    window.addSpeaker = (i, id) => {
+      const p = '/speakers/' + i;
+      addAt('/speakers');
+      editAt(p + '/id', id);
+      editAt(p + '/name', 'Visiting speaker');
+      editAt(p + '/fee', 0);
+      addAt(p + '/qualified');
+      editAt(p + '/qualified/0', arguments[0]);
+    };
+  `, before.tracks[0].id);
+  const flags = await run(`
+    const ids = Array.from(document.querySelectorAll('input[data-value-path$="/id"]'));
+    return ids.map(el => el.readOnly && el.closest('.node').querySelector('button.clear').disabled);
+  `);
+  assert.equal(flags.length, 27);
+  assert.ok(flags.every(Boolean));
+  assert.equal(await run("return inputAt('/speakers/0/name').readOnly"), false);
+  await run(`
+    editAt('/speakers/0/id', 'attempted-change');
+    editAt('/speakers/0/name', 'New display name');
+    addSpeaker(arguments[0], arguments[1]);
+    saveForm();
+  `, base, before.speakers[0].id);
+  async function waitFor(condition) {
+    for (let i = 0; i < 100; i++) {
+      if (await run("return " + condition)) return;
+      await delay(50);
+    }
+    assert.fail("Timed out waiting for " + condition);
+  }
+  await waitFor("document.querySelector('[role=status]').textContent.includes('more than once')");
+  const pendingPath = "/speakers/" + base;
+  assert.equal(await run("return inputAt(arguments[0]+'/id').readOnly", pendingPath), false);
+  assert.equal(await run("return inputAt('/speakers/0/id').value"), before.speakers[0].id);
+  await run(`
+    editAt(arguments[0]+'/id', 'guest-one');
+    addSpeaker(arguments[1], 'guest-two');
+    const send = window.fetch;
+    window.fetch = async (...args) => {
+      const response = await send(...args);
+      if (args[1]?.method === 'PUT' && !window.release) {
+        await new Promise(resolve => { window.release = resolve });
+        throw new TypeError('Lost acknowledgement');
+      }
+      return response;
+    };
+    saveForm();
+  `, pendingPath, base + 1);
+  await waitFor("!!window.release");
+  assert.equal(await run("return inputAt(arguments[0]+'/id').readOnly", pendingPath), true);
+  await run(`
+    const list = document.querySelector('.node[data-value-path="/speakers"]');
+    list.querySelectorAll(':scope > div > .list-item')[arguments[0]].querySelector(':scope > button').click();
+    editAt(arguments[1]+'/name', 'Edited during save');
+    addSpeaker(arguments[0]+1, 'guest-three');
+    window.release();
+  `, base, pendingPath);
+  await waitFor("document.querySelector('[role=status]').textContent === 'Unsaved changes'");
+  assert.deepEqual(await run(`
+    return [inputAt(arguments[0]+'/id').value, inputAt(arguments[0]+'/id').readOnly,
+      inputAt('/speakers/'+arguments[1]+'/id').readOnly];
+  `, pendingPath, base+1), ["guest-two", true, false]);
+  await run("saveForm()");
+  await waitFor("document.querySelector('[role=status]').textContent === 'Saved to SQLite'");
+  const stored = await (await fetch(endpoint)).json();
+  assert.equal(await run("return Array.from(document.querySelector('#speaker-options').options).find(o=>o.value===arguments[0]).label", before.speakers[0].id), "New display name");
+  assert.equal(stored.speakers[0].name, "New display name");
+  assert.equal(stored.speakers[0].id, before.speakers[0].id);
+  assert.deepEqual(stored.venues, before.venues);
+  assert.deepEqual(stored.speakers.slice(base).map(s => [s.id, s.name]),
+    [["guest-two","Edited during save"],["guest-three","Visiting speaker"]]);
+  await openForm();
+  assert.equal(await run("return Array.from(document.querySelectorAll('input[data-value-path$=\"/id\"]')).every(el=>el.readOnly)"), true);
 });

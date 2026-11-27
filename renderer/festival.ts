@@ -2,6 +2,9 @@ import { createEngine, valuePathToString } from "../dist/esm/index.js";
 import type { EngineValue } from "./types";
 import definition from "../tests/fixtures/festival.json";
 import { createRendererVDOM } from "./vdom/index";
+import { festivalIDs } from "./festival_ids";
+import { parseValuePath } from "./utils";
+import { getAt } from "../dist/esm/kinetic/value_ops.js";
 import { saveControls } from "./save_controls";
 
 const endpoint = "/api/festival";
@@ -92,12 +95,35 @@ async function start() {
   const engine = createEngine(definition);
   const initial = engine.reset(await response.json());
   if (initial.sigma.root !== "Valid") throw new Error("Stored program failed projection validation");
+  const ids = festivalIDs();
+  ids.reserve(initial.value);
+  function showIDFields() {
+    const value = engine.getState().value;
+    for (const input of form.querySelectorAll<HTMLInputElement>('input[data-value-path$="/id"]')) {
+      const path = parseValuePath(input.dataset.valuePath!);
+      input.readOnly = ids.locked(value, path);
+      input.title = input.readOnly ? "Stable entity ID" : "Choose an ID before saving";
+      const clear = input.closest(".node")?.querySelector<HTMLButtonElement>("button.clear");
+      if (clear) clear.disabled = input.readOnly;
+    }
+  }
   const saver = saveControls("program", endpoint, tag, () => engine.getState().value,
-    () => engine.getState().sigma.root === "Valid", "Loaded saved program");
+    () => engine.getState().sigma.root === "Valid", "Loaded saved program", snapshot => {
+      const settle = ids.reserve(snapshot);
+      showIDFields();
+      return confirmed => { settle(confirmed); showIDFields(); };
+    });
   toolbar.replaceChildren(saver.controls);
   const renderer = createRendererVDOM(action => {
     const previous = engine.getState().value;
+    if ((action.type === "SetScalar" || action.type === "Unset") && ids.locked(previous, action.at)) {
+      const path = valuePathToString(action.at);
+      const input = form.querySelector<HTMLInputElement>(`input[data-value-path="${CSS.escape(path)}"]`);
+      if (input) input.value = String(getAt(previous, action.at));
+      return engine.getState();
+    }
     const next = engine.dispatch(action);
+    if (action.type !== "MoveCursor" && previous !== next.value) ids.afterEdit(previous, next.value, action.at);
     if (action.type === "MoveCursor") {
       const path = valuePathToString(next.cursor.valuePath);
       revealSection(form.querySelector<HTMLElement>(`[data-value-path="${CSS.escape(path)}"]`));
@@ -114,10 +140,12 @@ async function start() {
     if (next.value !== previous) {
       saver.changed();
       updateNavigation(next.value);
+      showIDFields();
     }
     return next;
   });
   renderer.render(engine, app);
   updateNavigation(initial.value);
+  showIDFields();
 }
 void start().catch((error: unknown) => { toolbar.textContent = `Could not load festival program: ${String(error)}`; });

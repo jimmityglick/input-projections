@@ -14,6 +14,8 @@ Run `npm test`, then `go test ./backend` from the repository root. The Go integr
 
 Open [the festival program](http://127.0.0.1:5183/input-projections/festival.html) for a nested, single-day program with shared speakers and tracks. Expand a session to edit its agenda, format, and assignments. The form checks local constraints immediately. On save, the Go service checks identity and references, room capacity and opening times, room and speaker conflicts, track qualifications, segment duration, workshop kit coverage, and the combined talent and production budget. Speaker fees count once per person. The budget and schedule belong to one festival, so SQLite stores the complete accepted program as one versioned JSON document, separate from the work queue.
 
+New festival entities have editable IDs until their first confirmed save. To rename an existing speaker, edit their name. Session assignments keep the same speaker ID. The festival API takes a complete snapshot: removing one ID and introducing another represents removing and adding entities, and the server checks all resulting references.
+
 Both pages start with **Auto-save Off**. Turning it on saves a valid draft after an 800 ms pause and remembers the preference for that page in the browser. Rejected saves keep the draft available for correction. Turning auto-save off cancels a scheduled save. A save already sent can complete. With auto-save on, queue seed and reset actions also save their resulting queue.
 
 Run `npm run test:festival` for Chromium regressions against a fresh, temporary database. This requires a local Chromium installation and matching chromedriver on PATH.

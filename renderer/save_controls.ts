@@ -7,6 +7,7 @@ export function saveControls(
   payload: () => EngineValue,
   isValid: () => boolean,
   initialStatus: string,
+  onSubmit?: (snapshot: EngineValue) => (confirmed: boolean) => void,
 ) {
   const controls = document.createElement("section");
   controls.className = "save-controls";
@@ -32,6 +33,7 @@ export function saveControls(
   let saved = current;
   let cleanStatus = initialStatus;
   let pending = false;
+  let settleSubmission: ((confirmed: boolean) => void) | undefined;
   let unconfirmed: string | undefined;
   let timer: number | undefined;
 
@@ -104,7 +106,9 @@ export function saveControls(
     try {
       if (unconfirmed === undefined) {
         status.textContent = "Saving…";
-        const nextTag = await write(JSON.stringify(payload()), tag);
+        const snapshot = payload();
+        settleSubmission = onSubmit?.(snapshot);
+        const nextTag = await write(JSON.stringify(snapshot), tag);
         if (!tag) return;
         if (nextTag) {
           saved = submitted;
@@ -123,6 +127,10 @@ export function saveControls(
       status.textContent = unconfirmed === undefined ? String(error)
         : "Could not verify the save. Your draft is still here. Check again when connected.";
     } finally {
+      if (unconfirmed === undefined) {
+        settleSubmission?.(saved === submitted);
+        settleSubmission = undefined;
+      }
       pending = false;
       save.textContent = unconfirmed === undefined ? `Save ${name}` : "Check saved version";
       if (tag && unconfirmed === undefined && (saved === submitted || current !== submitted)) showDraftStatus();
