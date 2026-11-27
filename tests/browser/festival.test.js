@@ -115,3 +115,20 @@ test("format selectors show exactly the two possible kinds, and branch changes c
   assert.equal(result.changed, true);
   assert.equal(result.saveDisabled, true);
 });
+
+test("Add opens the new entity and focuses its ID", async () => {
+  await openForm();
+  for (const path of ["/tracks", "/speakers", "/venues/0/rooms/0/stages/0/sessions"]) {
+    const result = await run(`
+      const path = arguments[0];
+      const list = document.querySelector('.node[data-value-path="' + path + '"]');
+      const index = list.querySelectorAll(':scope > div > .list-item').length;
+      list.querySelector('button[data-value-path="' + path + '"]').click();
+      const id = document.querySelector('input[data-value-path="' + path + '/' + index + '/id"]');
+      const bounds = id.getBoundingClientRect();
+      return [id === document.activeElement, bounds.height > 0,
+        bounds.top >= document.querySelector('#festival-save').getBoundingClientRect().bottom && bounds.bottom <= innerHeight];
+    `, path);
+    assert.deepEqual(result, [true, true, true], path);
+  }
+});

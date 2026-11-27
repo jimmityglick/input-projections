@@ -1,4 +1,4 @@
-import { createEngine } from "../dist/esm/index.js";
+import { createEngine, valuePathToString } from "../dist/esm/index.js";
 import type { EngineValue } from "./types";
 import definition from "../tests/fixtures/festival.json";
 import { createRendererVDOM } from "./vdom/index";
@@ -38,6 +38,12 @@ function labelEntitySections() {
   }
 }
 
+function revealSection(target: HTMLElement | null) {
+  for (let el = target; el && el !== form; el = el.parentElement) {
+    el.querySelector(":scope > legend > button")?.setAttribute("aria-expanded", "true");
+  }
+}
+
 function updateNavigation(value: EngineValue) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return;
   labelEntitySections();
@@ -56,11 +62,7 @@ function updateNavigation(value: EngineValue) {
     const link = document.createElement("a");
     link.href = "#" + target.id;
     link.textContent = label;
-    link.onclick = () => {
-      for (let el: HTMLElement | null = target; el && el !== form; el = el.parentElement) {
-        el.querySelector(":scope > legend > button")?.setAttribute("aria-expanded", "true");
-      }
-    };
+    link.onclick = () => revealSection(target);
     if (path.includes("/rooms/")) link.className = "room-link";
     nav.append(link);
   }
@@ -96,7 +98,19 @@ async function start() {
   const renderer = createRendererVDOM(action => {
     const previous = engine.getState().value;
     const next = engine.dispatch(action);
+    if (action.type === "MoveCursor") {
+      const path = valuePathToString(next.cursor.valuePath);
+      revealSection(form.querySelector<HTMLElement>(`[data-value-path="${CSS.escape(path)}"]`));
+    }
+    const focusBefore = document.activeElement;
     renderer.render(engine, app);
+    const focused = document.activeElement;
+    if (action.type === "MoveCursor" && focused instanceof HTMLElement && focused !== focusBefore) {
+      const bounds = focused.getBoundingClientRect();
+      if (bounds.top < toolbar.getBoundingClientRect().bottom || bounds.bottom > document.documentElement.clientHeight) {
+        focused.scrollIntoView({block: "center"});
+      }
+    }
     if (next.value !== previous) {
       saver.changed();
       updateNavigation(next.value);
