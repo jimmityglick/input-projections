@@ -115,13 +115,13 @@ export function viewUnion(
   const header = h("div.node-header", [headerLabel, h("code.node-path", projStr)]);
 
   if (layout === "tabs") {
-    const tabButtons: VNode[] = [
-      h("button.tab", {
+    const tabButtons = [
+      node.default === undefined ? h("button.tab", {
         props: { type: "button" },
         class: { active: selected === undefined },
         dataset: { projectionPath: projStr, valuePath: discValStr },
         on: { click: unset, focus: createFocusHandler(ctx, projStr, discValStr) },
-      }, "(select)"),
+      }, "(select)") : undefined,
       ...node.variantOrder.map((key) =>
         h("button.tab", {
           props: { type: "button" },
@@ -146,8 +146,8 @@ export function viewUnion(
 
   if (layout === "radio") {
     const groupName = `${idBase}-radio`;
-    const radioOptions: VNode[] = [
-      h("label", [
+    const radioOptions = [
+      node.default === undefined ? h("label", [
         h("input", {
           props: { type: "radio", name: groupName, checked: selected === undefined, value: UNSET },
           dataset: { projectionPath: projStr, valuePath: discValStr },
@@ -157,7 +157,7 @@ export function viewUnion(
           },
         }),
         "(select)",
-      ]),
+      ]) : undefined,
       ...node.variantOrder.map((key) =>
         h("label", [
           h("input", {
@@ -186,13 +186,13 @@ export function viewUnion(
   }
 
   if (layout === "segmented") {
-    const segments: VNode[] = [
-      h("button.segment", {
+    const segments = [
+      node.default === undefined ? h("button.segment", {
         props: { type: "button" },
         class: { active: selected === undefined },
         dataset: { projectionPath: projStr, valuePath: discValStr },
         on: { click: unset, focus: createFocusHandler(ctx, projStr, discValStr) },
-      }, "(select)"),
+      }, "(select)") : undefined,
       ...node.variantOrder.map((key) =>
         h("button.segment", {
           props: { type: "button" },
@@ -217,8 +217,8 @@ export function viewUnion(
 
   // Default: dropdown
   const selectId = `${idBase}-discriminator`;
-  const options: VNode[] = [
-    h("option", { props: { value: UNSET, selected: selected === undefined } }, "(select variant)"),
+  const options = [
+    node.default === undefined ? h("option", { props: { value: UNSET, selected: selected === undefined } }, "(select variant)") : undefined,
     ...node.variantOrder.map((key) =>
       h("option", { props: { value: key, selected: key === selected } }, key)
     ),

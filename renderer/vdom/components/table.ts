@@ -493,7 +493,9 @@ export function viewTable(
             focus: createFocusHandler(ctx, unionProjectionPathStr, discValuePathStr),
           },
         }, [
-          h("option", { props: { value: UNSET, selected: selectedVariant === undefined } }, "(select variant)"),
+          col.unionNode.default === undefined
+            ? h("option", { props: { value: UNSET, selected: selectedVariant === undefined } }, "(select variant)")
+            : undefined,
           ...col.unionNode.variantOrder.map((key) => h("option", { props: { value: key, selected: key === selectedVariant } }, key)),
         ]);
 

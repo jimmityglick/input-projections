@@ -201,10 +201,12 @@ export function renderUnion(
   const UNSET = "__unset__";
 
   const desiredOptions: HTMLOptionElement[] = [];
-  const optUnset = document.createElement("option");
-  optUnset.value = UNSET;
-  optUnset.textContent = "(select variant)";
-  desiredOptions.push(optUnset);
+  if (node.default === undefined) {
+    const optUnset = document.createElement("option");
+    optUnset.value = UNSET;
+    optUnset.textContent = "(select variant)";
+    desiredOptions.push(optUnset);
+  }
   for (const key of node.variantOrder) {
     const opt = document.createElement("option");
     opt.value = key;
@@ -651,10 +653,12 @@ function renderListAsTable(
         // Reconcile options - include unset placeholder
         const UNSET = "__unset__";
         const desiredOptions: HTMLOptionElement[] = [];
-        const optUnset = document.createElement("option");
-        optUnset.value = UNSET;
-        optUnset.textContent = "(select variant)";
-        desiredOptions.push(optUnset);
+        if (col.unionNode.default === undefined) {
+          const optUnset = document.createElement("option");
+          optUnset.value = UNSET;
+          optUnset.textContent = "(select variant)";
+          desiredOptions.push(optUnset);
+        }
         for (const variantKey of col.unionNode.variantOrder) {
           const opt = document.createElement("option");
           opt.value = variantKey;

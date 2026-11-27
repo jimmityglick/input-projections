@@ -98,3 +98,20 @@ test("restoring saved content stays clean even if a property was removed and rei
   assert.deepEqual(await latest.json(), await initial.json());
   await run("document.querySelector('[role=switch]').click()");
 });
+
+test("format selectors show exactly the two possible kinds, and branch changes clear obsolete fields", async () => {
+  await openForm();
+  const result = await run(`
+    const selects = Array.from(document.querySelectorAll('#app select'));
+    const options = selects.map(select => Array.from(select.options, option => option.value));
+    const first = selects[0];
+    const previous = first.value;
+    first.value = previous === "talk" ? "workshop" : "talk";
+    first.dispatchEvent(new Event("change", {bubbles:true}));
+    return {options, changed: first.value !== previous, saveDisabled: document.querySelector('#festival-save button').disabled};
+  `);
+  assert.equal(result.options.length, 8);
+  for (const options of result.options) assert.deepEqual(options, ["talk", "workshop"]);
+  assert.equal(result.changed, true);
+  assert.equal(result.saveDisabled, true);
+});
