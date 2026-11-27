@@ -19,3 +19,5 @@ New festival entities have editable IDs until their first confirmed save. To ren
 Both pages start with **Auto-save Off**. Turning it on saves a valid draft after an 800 ms pause and remembers the preference for that page in the browser. Rejected saves keep the draft available for correction. Turning auto-save off cancels a scheduled save. A save already sent can complete. With auto-save on, queue seed and reset actions also save their resulting queue.
 
 Run `npm run test:festival` for Chromium regressions against a fresh, temporary database. This requires a local Chromium installation and matching chromedriver on PATH.
+
+The [festival decisions and lessons](../docs/FESTIVAL_DECISIONS.md) explain the identity, validation, save, and reference-picker behavior observed in these demos.
