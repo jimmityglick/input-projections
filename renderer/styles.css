@@ -264,3 +264,6 @@ small.error {
   background: var(--inspector-accent);
   color: white;
 }
+
+.save-controls { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.save-controls > button, .save-controls > label { width: auto; margin: 0; }

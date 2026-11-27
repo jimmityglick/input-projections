@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Festival program editor</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./festival.css">
+</head>
+<body class="festival">
+  <header class="masthead"><a href="./grid-full-power.html">← Work queue</a><h1>Festival program</h1></header>
+  <div id="festival-save" aria-live="polite">Loading program…</div>
+  <main class="program">
+    <nav id="outline" aria-label="Program outline"><h2>Program outline</h2></nav>
+    <form id="program-form" aria-label="Festival program"><div id="app"></div></form>
+  </main>
+  <datalist id="speaker-options"></datalist><datalist id="track-options"></datalist>
+  <script type="module" src="./festival.ts"></script>
+</body>
+</html>

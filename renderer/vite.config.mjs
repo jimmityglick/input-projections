@@ -19,6 +19,7 @@ export default defineConfig({
   base: "/input-projections/",
   root: rendererRoot,
   server: {
+    proxy: { "/api/": "http://127.0.0.1:5183" },
     fs: {
       allow: [repoRoot],
     },

@@ -1,0 +1,34 @@
+.festival { margin: 0; background: #faf8f1; color: #29352e; font: 16px/1.45 "Source Sans 3", system-ui, sans-serif; --inspector-border: #d6d5c8; }
+.festival * { box-sizing: border-box; }
+.masthead, .program, #festival-save { padding-inline: clamp(1rem, 4vw, 4rem); }
+.masthead { background: #253d34; color: #fffaf0; padding-block: 1.2rem 1.8rem; }
+.masthead a { color: #e9dec3; }
+.masthead h1 { font: 500 clamp(2.2rem, 5vw, 4.5rem)/1 Georgia, serif; margin: 1rem 0 0; }
+#festival-save { position: sticky; top: 0; z-index: 2; background: #f0ece0; border-bottom: 1px solid #c8c9b9; padding-block: .65rem; }
+.festival button, .festival input { font: inherit; }
+.festival button { cursor: pointer; background: #f6f3ea; border: 1px solid #b9bbaa; color: #324c3c; border-radius: .25rem; padding: .2rem .6rem; }
+.festival button:disabled { opacity: .5; cursor: default; }
+#festival-save button { background: #284c3b; color: white; padding: .45rem 1rem; }
+.program { display: flex; gap: 2rem; max-width: 84rem; margin: 1.5rem auto; align-items: flex-start; }
+#outline { flex: 0 0 12rem; position: sticky; top: 4.8rem; max-height: 75vh; overflow: auto; }
+#outline h2 { font: 1.4rem Georgia, serif; }
+#outline a { display: block; color: #315a47; padding: .2rem 0; }
+#outline .room-link { padding-left: 1rem; font-size: .9rem; }
+#program-form { flex: 1; min-width: 0; }
+#program-form .node { min-width: 0; scroll-margin-top: 5rem; padding: .35rem .6rem; margin: .35rem 0; border-radius: 0; }
+#program-form fieldset.node { background: #fffdf7; padding: .6rem; border: 0; border-left: 2px solid #a4b29d; }
+#program-form legend { color: #2a4a38; font: 1.25rem Georgia, serif; }
+#program-form .node-path { display: none; }
+#program-form .node:has(> .node-header > label) { border: 0; }
+#program-form input:not([type=checkbox]) { width: 100%; min-width: 0; padding: .3rem .55rem; border: 1px solid #b6bcad; border-radius: .2rem; background: white; }
+#program-form .list-item { display: block; margin: .65rem 0 1rem; }
+#program-form .list-item > button { font-size: .8rem; }
+#program-form .judgment-invalid { outline: 1px solid #b04836; }
+@media(max-width: 780px) {
+ .program { display: block; padding-inline: .65rem; } #outline { position: static; max-height: 10rem; margin-bottom: 1rem; }
+ #program-form .node, #program-form fieldset.node { padding-inline: .25rem; } .save-controls { gap: .4rem; }
+}
+#program-form legend button { font: inherit; background: transparent; border: 0; padding: .15rem .25rem; text-align: left; }
+#program-form legend button::before { content: "▸ "; }
+#program-form legend button[aria-expanded=true]::before { content: "▾ "; }
+#program-form fieldset:has(> legend > button[aria-expanded=false]) > :not(legend) { display: none; }

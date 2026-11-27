@@ -239,7 +239,7 @@ export function createEngine(input: unknown | ProjectionDefinition): Engine {
       return state;
     },
     reset(initialValue?: EngineValue) {
-      const normalizedValue = normalizeValue(compiled.root, initialValue, state.value);
+      const normalizedValue = normalizeValue(compiled.root, initialValue, undefined);
       const sigma = judge(compiled, normalizedValue);
       const cursor = normalizeCursor(compiled, normalizedValue);
       state = { projection: compiled, value: normalizedValue, cursor, sigma };

@@ -1,0 +1,382 @@
+{
+  "name": "Harbour Assembly",
+  "budget": 8500,
+  "tracks": [
+    {
+      "id": "sound",
+      "name": "Sound & fieldwork"
+    },
+    {
+      "id": "making",
+      "name": "Making & materials"
+    },
+    {
+      "id": "cities",
+      "name": "City life"
+    }
+  ],
+  "speakers": [
+    {
+      "id": "ines",
+      "name": "Inès Martin",
+      "fee": 350,
+      "qualified": [
+        "sound",
+        "making",
+        "cities"
+      ]
+    },
+    {
+      "id": "sam",
+      "name": "Sam Li",
+      "fee": 400,
+      "qualified": [
+        "sound",
+        "making",
+        "cities"
+      ]
+    },
+    {
+      "id": "jo",
+      "name": "Jo Bell",
+      "fee": 450,
+      "qualified": [
+        "sound",
+        "making",
+        "cities"
+      ]
+    },
+    {
+      "id": "maya",
+      "name": "Maya Roy",
+      "fee": 500,
+      "qualified": [
+        "sound",
+        "making",
+        "cities"
+      ]
+    },
+    {
+      "id": "eli",
+      "name": "Eli Stone",
+      "fee": 550,
+      "qualified": [
+        "sound",
+        "making",
+        "cities"
+      ]
+    },
+    {
+      "id": "ada",
+      "name": "Ada Chen",
+      "fee": 600,
+      "qualified": [
+        "sound",
+        "making",
+        "cities"
+      ]
+    }
+  ],
+  "venues": [
+    {
+      "id": "glassworks",
+      "name": "The Glassworks",
+      "opens": "09:00",
+      "closes": "18:00",
+      "rooms": [
+        {
+          "id": "room-1",
+          "name": "Foundry",
+          "capacity": 50,
+          "stages": [
+            {
+              "id": "stage-1",
+              "name": "Main stage",
+              "production": 450,
+              "sessions": [
+                {
+                  "id": "session-1",
+                  "name": "Listening to the harbour",
+                  "track": "sound",
+                  "start": "10:00",
+                  "end": "10:30",
+                  "seats": 36,
+                  "speakers": [
+                    "ines",
+                    "sam"
+                  ],
+                  "agenda": [
+                    {
+                      "label": "Presentation",
+                      "minutes": 20
+                    },
+                    {
+                      "label": "Audience questions",
+                      "minutes": 10
+                    }
+                  ],
+                  "format": {
+                    "kind": "talk",
+                    "data": {
+                      "microphones": 2
+                    }
+                  }
+                },
+                {
+                  "id": "session-2",
+                  "name": "Making with reclaimed glass",
+                  "track": "making",
+                  "start": "10:30",
+                  "end": "11:00",
+                  "seats": 36,
+                  "speakers": [
+                    "sam",
+                    "jo"
+                  ],
+                  "agenda": [
+                    {
+                      "label": "Presentation",
+                      "minutes": 20
+                    },
+                    {
+                      "label": "Audience questions",
+                      "minutes": 10
+                    }
+                  ],
+                  "format": {
+                    "kind": "workshop",
+                    "data": {
+                      "available": 44,
+                      "reserved": 36
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "room-2",
+          "name": "Boiler room",
+          "capacity": 60,
+          "stages": [
+            {
+              "id": "stage-2",
+              "name": "Workshop bench",
+              "production": 500,
+              "sessions": [
+                {
+                  "id": "session-3",
+                  "name": "Designing the night bus",
+                  "track": "cities",
+                  "start": "11:00",
+                  "end": "11:30",
+                  "seats": 44,
+                  "speakers": [
+                    "jo",
+                    "maya"
+                  ],
+                  "agenda": [
+                    {
+                      "label": "Presentation",
+                      "minutes": 20
+                    },
+                    {
+                      "label": "Audience questions",
+                      "minutes": 10
+                    }
+                  ],
+                  "format": {
+                    "kind": "talk",
+                    "data": {
+                      "microphones": 2
+                    }
+                  }
+                },
+                {
+                  "id": "session-4",
+                  "name": "A city in field recordings",
+                  "track": "sound",
+                  "start": "11:30",
+                  "end": "12:00",
+                  "seats": 44,
+                  "speakers": [
+                    "maya",
+                    "eli"
+                  ],
+                  "agenda": [
+                    {
+                      "label": "Presentation",
+                      "minutes": 20
+                    },
+                    {
+                      "label": "Audience questions",
+                      "minutes": 10
+                    }
+                  ],
+                  "format": {
+                    "kind": "workshop",
+                    "data": {
+                      "available": 52,
+                      "reserved": 44
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "library",
+      "name": "Harbour Library",
+      "opens": "09:00",
+      "closes": "18:00",
+      "rooms": [
+        {
+          "id": "room-3",
+          "name": "Reading room",
+          "capacity": 70,
+          "stages": [
+            {
+              "id": "stage-3",
+              "name": "Forum",
+              "production": 550,
+              "sessions": [
+                {
+                  "id": "session-5",
+                  "name": "The repair library",
+                  "track": "making",
+                  "start": "12:00",
+                  "end": "12:30",
+                  "seats": 52,
+                  "speakers": [
+                    "eli",
+                    "ada"
+                  ],
+                  "agenda": [
+                    {
+                      "label": "Presentation",
+                      "minutes": 20
+                    },
+                    {
+                      "label": "Audience questions",
+                      "minutes": 10
+                    }
+                  ],
+                  "format": {
+                    "kind": "talk",
+                    "data": {
+                      "microphones": 2
+                    }
+                  }
+                },
+                {
+                  "id": "session-6",
+                  "name": "Printing with river clay",
+                  "track": "cities",
+                  "start": "12:30",
+                  "end": "13:00",
+                  "seats": 52,
+                  "speakers": [
+                    "ada",
+                    "ines"
+                  ],
+                  "agenda": [
+                    {
+                      "label": "Presentation",
+                      "minutes": 20
+                    },
+                    {
+                      "label": "Audience questions",
+                      "minutes": 10
+                    }
+                  ],
+                  "format": {
+                    "kind": "workshop",
+                    "data": {
+                      "available": 60,
+                      "reserved": 52
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "room-4",
+          "name": "Map room",
+          "capacity": 80,
+          "stages": [
+            {
+              "id": "stage-4",
+              "name": "Archive stage",
+              "production": 600,
+              "sessions": [
+                {
+                  "id": "session-7",
+                  "name": "Public space after dark",
+                  "track": "sound",
+                  "start": "13:00",
+                  "end": "13:30",
+                  "seats": 60,
+                  "speakers": [
+                    "ines",
+                    "sam"
+                  ],
+                  "agenda": [
+                    {
+                      "label": "Presentation",
+                      "minutes": 20
+                    },
+                    {
+                      "label": "Audience questions",
+                      "minutes": 10
+                    }
+                  ],
+                  "format": {
+                    "kind": "talk",
+                    "data": {
+                      "microphones": 2
+                    }
+                  }
+                },
+                {
+                  "id": "session-8",
+                  "name": "An atlas of local sound",
+                  "track": "making",
+                  "start": "13:30",
+                  "end": "14:00",
+                  "seats": 60,
+                  "speakers": [
+                    "sam",
+                    "jo"
+                  ],
+                  "agenda": [
+                    {
+                      "label": "Presentation",
+                      "minutes": 20
+                    },
+                    {
+                      "label": "Audience questions",
+                      "minutes": 10
+                    }
+                  ],
+                  "format": {
+                    "kind": "workshop",
+                    "data": {
+                      "available": 68,
+                      "reserved": 60
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

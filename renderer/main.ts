@@ -2,6 +2,7 @@ import { createEngine } from "../dist/esm/index.js";
 import type { ProjectionDefinition } from "../dist/esm/index.js";
 import { createRendererImperative } from "./imperative/index";
 import { createRendererVDOM } from "./vdom/index";
+import { loadWorkQueue } from "./work_queue";
 import { generateDemoValue } from "./demo_data";
 import { resolveProjectionIncludes } from "./resolve_includes";
 
@@ -191,7 +192,7 @@ function mountControls(
   pages.className = "secondary";
   const base = import.meta.env.BASE_URL;
   pages.innerHTML =
-    `Quick pages: <a href="${base}purchase-order.html">purchase-order</a>, <a href="${base}password-confirmation.html">password-confirmation</a>, <a href="${base}price-range-filter.html">price-range-filter</a>, <a href="${base}grid-flat-rows.html">grid-flat-rows</a>, <a href="${base}grid-row-union.html">grid-row-union</a>, <a href="${base}grid-full-power.html">grid-full-power</a>, <a href="${base}edge-cases.html">edge-cases</a>`;
+    `Quick pages: <a href="${base}festival.html">festival program</a>, <a href="${base}purchase-order.html">purchase-order</a>, <a href="${base}password-confirmation.html">password-confirmation</a>, <a href="${base}price-range-filter.html">price-range-filter</a>, <a href="${base}grid-flat-rows.html">grid-flat-rows</a>, <a href="${base}grid-row-union.html">grid-row-union</a>, <a href="${base}grid-full-power.html">grid-full-power</a>, <a href="${base}edge-cases.html">edge-cases</a>`;
 
   const rendererInfo = document.createElement("p");
   rendererInfo.className = "secondary";
@@ -230,14 +231,19 @@ async function main(): Promise<void> {
     const projection = await loadFixture(fixture.file);
 
     const engine = createEngine(projection);
+    const queue = fixtureKey === "grid-full-power" ? await loadWorkQueue(engine) : undefined;
+    if (fixtureKey !== currentFixture) return;
     const renderer = createRendererByMode(rendererMode, (action) => {
+      const previous = engine.getState().value;
       const next = engine.dispatch(action);
+      queue?.edited(action, previous);
       renderer.render(engine, app);
       return next;
     });
 
     const doReset = () => {
-      engine.reset(undefined);
+      engine.reset(queue ? [] : undefined);
+      queue?.replace(engine.getState().value);
       renderer.render(engine, app);
     };
 
@@ -246,6 +252,7 @@ async function main(): Promise<void> {
       const value = generateDemoValue(fixtureKey, spec);
       if (value !== null) {
         engine.reset(value);
+        queue?.replace(engine.getState().value);
         renderer.render(engine, app);
       }
     };
@@ -269,6 +276,7 @@ async function main(): Promise<void> {
       },
     });
 
+    if (queue) appControls.append(queue.controls);
     renderer.render(engine, app);
   };
 

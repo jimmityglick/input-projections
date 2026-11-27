@@ -136,3 +136,10 @@ test("relation related paths are absolute (root-relative)", () => {
   ]);
   assert.deepEqual(issue.relatedValuePaths, [["account", "password"], ["account", "confirm_password"]]);
 });
+
+test("loading another record preserves the incoming union payload", () => {
+  const projection = readJson(path.join(engineDir, "union.json")).scenarios[2].projection;
+  const engine = createEngine(projection);
+  engine.reset({ type: "A", data: "first" });
+  assert.deepEqual(engine.reset({ type: "B", data: 2 }).value, { type: "B", data: 2 });
+});

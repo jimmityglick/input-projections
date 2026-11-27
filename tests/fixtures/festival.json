@@ -1,0 +1,578 @@
+{
+  "version": "1.0.0",
+  "root": {
+    "kind": "Struct",
+    "meta": {
+      "label": "Festival program"
+    },
+    "fields": {
+      "name": {
+        "kind": "Scalar",
+        "meta": {
+          "label": "Festival name"
+        },
+        "scalar": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "budget": {
+        "kind": "Scalar",
+        "meta": {
+          "label": "Production and talent budget ($)"
+        },
+        "scalar": {
+          "type": "number",
+          "min": 0,
+          "max": 1000000,
+          "multipleOf": 1
+        }
+      },
+      "tracks": {
+        "kind": "List",
+        "meta": {
+          "label": "Program tracks"
+        },
+        "item": {
+          "kind": "Struct",
+          "meta": {
+            "label": "Track"
+          },
+          "fields": {
+            "id": {
+              "kind": "Scalar",
+              "meta": {
+                "label": "Entity ID"
+              },
+              "scalar": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,39}$"
+              }
+            },
+            "name": {
+              "kind": "Scalar",
+              "meta": {
+                "label": "Name"
+              },
+              "scalar": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              }
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ]
+        },
+        "minItems": 1,
+        "maxItems": 12
+      },
+      "speakers": {
+        "kind": "List",
+        "meta": {
+          "label": "Speaker directory"
+        },
+        "item": {
+          "kind": "Struct",
+          "meta": {
+            "label": "Speaker"
+          },
+          "fields": {
+            "id": {
+              "kind": "Scalar",
+              "meta": {
+                "label": "Entity ID"
+              },
+              "scalar": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,39}$"
+              }
+            },
+            "name": {
+              "kind": "Scalar",
+              "meta": {
+                "label": "Name"
+              },
+              "scalar": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              }
+            },
+            "fee": {
+              "kind": "Scalar",
+              "meta": {
+                "label": "Appearance fee ($)"
+              },
+              "scalar": {
+                "type": "number",
+                "min": 0,
+                "max": 100000,
+                "multipleOf": 1
+              }
+            },
+            "qualified": {
+              "kind": "List",
+              "meta": {
+                "label": "Qualified tracks"
+              },
+              "item": {
+                "kind": "Reference",
+                "meta": {
+                  "label": "Track ID"
+                },
+                "target": "Track",
+                "format": {
+                  "minLength": 1,
+                  "maxLength": 40
+                }
+              },
+              "minItems": 1,
+              "maxItems": 12,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "fee",
+            "qualified"
+          ]
+        },
+        "minItems": 1,
+        "maxItems": 12
+      },
+      "venues": {
+        "kind": "List",
+        "meta": {
+          "label": "Venues and running order"
+        },
+        "item": {
+          "kind": "Struct",
+          "meta": {
+            "label": "Venue"
+          },
+          "fields": {
+            "id": {
+              "kind": "Scalar",
+              "meta": {
+                "label": "Entity ID"
+              },
+              "scalar": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,39}$"
+              }
+            },
+            "name": {
+              "kind": "Scalar",
+              "meta": {
+                "label": "Name"
+              },
+              "scalar": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              }
+            },
+            "opens": {
+              "kind": "Scalar",
+              "meta": {
+                "label": "Doors open (HH:MM)"
+              },
+              "scalar": {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              }
+            },
+            "closes": {
+              "kind": "Scalar",
+              "meta": {
+                "label": "Doors close (HH:MM)"
+              },
+              "scalar": {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              }
+            },
+            "rooms": {
+              "kind": "List",
+              "meta": {
+                "label": "Rooms"
+              },
+              "item": {
+                "kind": "Struct",
+                "meta": {
+                  "label": "Room"
+                },
+                "fields": {
+                  "id": {
+                    "kind": "Scalar",
+                    "meta": {
+                      "label": "Entity ID"
+                    },
+                    "scalar": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                    }
+                  },
+                  "name": {
+                    "kind": "Scalar",
+                    "meta": {
+                      "label": "Name"
+                    },
+                    "scalar": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  },
+                  "capacity": {
+                    "kind": "Scalar",
+                    "meta": {
+                      "label": "Room capacity"
+                    },
+                    "scalar": {
+                      "type": "number",
+                      "min": 1,
+                      "max": 2000,
+                      "multipleOf": 1
+                    }
+                  },
+                  "stages": {
+                    "kind": "List",
+                    "meta": {
+                      "label": "Stages"
+                    },
+                    "item": {
+                      "kind": "Struct",
+                      "meta": {
+                        "label": "Stage"
+                      },
+                      "fields": {
+                        "id": {
+                          "kind": "Scalar",
+                          "meta": {
+                            "label": "Entity ID"
+                          },
+                          "scalar": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                          }
+                        },
+                        "name": {
+                          "kind": "Scalar",
+                          "meta": {
+                            "label": "Name"
+                          },
+                          "scalar": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 100
+                          }
+                        },
+                        "production": {
+                          "kind": "Scalar",
+                          "meta": {
+                            "label": "Production cost ($)"
+                          },
+                          "scalar": {
+                            "type": "number",
+                            "min": 0,
+                            "max": 100000,
+                            "multipleOf": 1
+                          }
+                        },
+                        "sessions": {
+                          "kind": "List",
+                          "meta": {
+                            "label": "Sessions"
+                          },
+                          "item": {
+                            "kind": "Struct",
+                            "meta": {
+                              "label": "Session"
+                            },
+                            "fields": {
+                              "id": {
+                                "kind": "Scalar",
+                                "meta": {
+                                  "label": "Entity ID"
+                                },
+                                "scalar": {
+                                  "type": "string",
+                                  "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                                }
+                              },
+                              "name": {
+                                "kind": "Scalar",
+                                "meta": {
+                                  "label": "Name"
+                                },
+                                "scalar": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 100
+                                }
+                              },
+                              "track": {
+                                "kind": "Reference",
+                                "meta": {
+                                  "label": "Program track"
+                                },
+                                "target": "Track",
+                                "format": {
+                                  "minLength": 1,
+                                  "maxLength": 40
+                                }
+                              },
+                              "start": {
+                                "kind": "Scalar",
+                                "meta": {
+                                  "label": "Starts (HH:MM)"
+                                },
+                                "scalar": {
+                                  "type": "string",
+                                  "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                                }
+                              },
+                              "end": {
+                                "kind": "Scalar",
+                                "meta": {
+                                  "label": "Ends (HH:MM)"
+                                },
+                                "scalar": {
+                                  "type": "string",
+                                  "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                                }
+                              },
+                              "seats": {
+                                "kind": "Scalar",
+                                "meta": {
+                                  "label": "Seats offered"
+                                },
+                                "scalar": {
+                                  "type": "number",
+                                  "min": 1,
+                                  "max": 2000,
+                                  "multipleOf": 1
+                                }
+                              },
+                              "speakers": {
+                                "kind": "List",
+                                "meta": {
+                                  "label": "Assigned speakers"
+                                },
+                                "item": {
+                                  "kind": "Reference",
+                                  "meta": {
+                                    "label": "Speaker ID"
+                                  },
+                                  "target": "Speaker",
+                                  "format": {
+                                    "minLength": 1,
+                                    "maxLength": 40
+                                  }
+                                },
+                                "minItems": 1,
+                                "maxItems": 12,
+                                "uniqueItems": true
+                              },
+                              "agenda": {
+                                "kind": "List",
+                                "meta": {
+                                  "label": "Run of show"
+                                },
+                                "item": {
+                                  "kind": "Struct",
+                                  "meta": {
+                                    "label": "Run-of-show segment"
+                                  },
+                                  "fields": {
+                                    "label": {
+                                      "kind": "Scalar",
+                                      "meta": {
+                                        "label": "Segment"
+                                      },
+                                      "scalar": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 100
+                                      }
+                                    },
+                                    "minutes": {
+                                      "kind": "Scalar",
+                                      "meta": {
+                                        "label": "Minutes"
+                                      },
+                                      "scalar": {
+                                        "type": "number",
+                                        "min": 1,
+                                        "max": 240,
+                                        "multipleOf": 1
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "label",
+                                    "minutes"
+                                  ]
+                                },
+                                "minItems": 1,
+                                "maxItems": 12
+                              },
+                              "format": {
+                                "kind": "Union",
+                                "meta": {
+                                  "label": "Session format"
+                                },
+                                "discriminator": "kind",
+                                "default": "talk",
+                                "variants": {
+                                  "talk": {
+                                    "kind": "Struct",
+                                    "meta": {
+                                      "label": "Talk setup"
+                                    },
+                                    "fields": {
+                                      "microphones": {
+                                        "kind": "Scalar",
+                                        "meta": {
+                                          "label": "Microphones"
+                                        },
+                                        "scalar": {
+                                          "type": "number",
+                                          "min": 1,
+                                          "max": 2000,
+                                          "multipleOf": 1
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "microphones"
+                                    ]
+                                  },
+                                  "workshop": {
+                                    "kind": "Struct",
+                                    "meta": {
+                                      "label": "Workshop materials"
+                                    },
+                                    "fields": {
+                                      "available": {
+                                        "kind": "Scalar",
+                                        "meta": {
+                                          "label": "Kits available"
+                                        },
+                                        "scalar": {
+                                          "type": "number",
+                                          "min": 1,
+                                          "max": 2000,
+                                          "multipleOf": 1
+                                        }
+                                      },
+                                      "reserved": {
+                                        "kind": "Scalar",
+                                        "meta": {
+                                          "label": "Kits reserved"
+                                        },
+                                        "scalar": {
+                                          "type": "number",
+                                          "min": 1,
+                                          "max": 2000,
+                                          "multipleOf": 1
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "available",
+                                      "reserved"
+                                    ],
+                                    "relations": [
+                                      {
+                                        "op": "lte",
+                                        "left": "reserved",
+                                        "right": "available",
+                                        "label": "Reserved kits must fit within available stock"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "track",
+                              "start",
+                              "end",
+                              "seats",
+                              "speakers",
+                              "agenda",
+                              "format"
+                            ],
+                            "relations": [
+                              {
+                                "left": "start",
+                                "right": "end",
+                                "op": "lt",
+                                "label": "Session must end after it starts"
+                              }
+                            ]
+                          },
+                          "minItems": 1,
+                          "maxItems": 12
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "production",
+                        "sessions"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 12
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "capacity",
+                  "stages"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 12
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "opens",
+            "closes",
+            "rooms"
+          ],
+          "relations": [
+            {
+              "left": "opens",
+              "right": "closes",
+              "op": "lt",
+              "label": "Doors must close after they open"
+            }
+          ]
+        },
+        "minItems": 1,
+        "maxItems": 12
+      }
+    },
+    "required": [
+      "name",
+      "budget",
+      "tracks",
+      "speakers",
+      "venues"
+    ]
+  }
+}
