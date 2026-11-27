@@ -32,6 +32,7 @@ export function saveControls(
   let saved = current;
   let cleanStatus = initialStatus;
   let pending = false;
+  let unconfirmed: string | undefined;
   let timer: number | undefined;
 
   function available() {
@@ -39,13 +40,13 @@ export function saveControls(
   }
   function schedule() {
     window.clearTimeout(timer);
-    save.disabled = !available();
-    if (auto.checked && available()) timer = window.setTimeout(submit, 800);
+    save.disabled = pending || (unconfirmed === undefined && !available());
+    if (auto.checked && unconfirmed === undefined && available()) timer = window.setTimeout(submit, 800);
   }
   function changed() {
     if (!tag) return;
     current = isValid() ? stableStringify(payload()) : undefined;
-    showDraftStatus();
+    if (unconfirmed === undefined) showDraftStatus();
     schedule();
   }
   function showDraftStatus() {
@@ -53,35 +54,80 @@ export function saveControls(
     else if (current === undefined) status.textContent = "Draft incomplete or invalid — saving paused";
     else status.textContent = current === saved ? cleanStatus : "Unsaved changes";
   }
+  function conflict() {
+    tag = null;
+    status.textContent = "The saved version changed. Your draft is still here. Refresh to load the saved version.";
+  }
+  async function write(body: string, baseTag: string) {
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: "PUT", headers: {"Content-Type": "application/json", "If-Match": baseTag}, body,
+      });
+    } catch {
+      return null; // No acknowledgement. Read the server value before another write.
+    }
+    if (response.status === 412) {
+      conflict();
+      return null;
+    }
+    if (!response.ok) throw new Error((await response.text()).trim());
+    return response.headers.get("ETag");
+  }
+  async function verifySave() {
+    const response = await fetch(endpoint, {cache: "no-store"});
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const observedTag = response.headers.get("ETag");
+    if (!observedTag) throw new Error("Missing revision");
+    const observed = stableStringify(await response.json());
+    if (observed === unconfirmed) {
+      saved = observed;
+      tag = observedTag;
+      cleanStatus = "Saved to SQLite";
+      return;
+    }
+    if (observedTag === tag && observed === saved) {
+      if (current === saved) status.textContent = cleanStatus;
+      else if (current === undefined) status.textContent = "Draft incomplete or invalid — saving paused";
+      else status.textContent = "Server still has the previous version. You can retry Save.";
+    } else {
+      conflict();
+    }
+  }
   async function submit() {
     window.clearTimeout(timer);
-    if (!tag || !available()) return;
-    const submitted = current;
+    if (!tag || pending || (unconfirmed === undefined && !available())) return;
+    // Capture the submitted value separately from any edits made while awaiting HTTP.
+    const submitted = unconfirmed ?? current;
     pending = true;
     save.disabled = true;
-    status.textContent = "Saving…";
     try {
-      const response = await fetch(endpoint, {
-        method: "PUT",
-        headers: {"Content-Type": "application/json", "If-Match": tag},
-        body: JSON.stringify(payload()),
-      });
-      if (response.status === 412) {
-        tag = null;
-        throw new Error("The saved version changed. Refresh to load it. Your draft is still here.");
+      if (unconfirmed === undefined) {
+        status.textContent = "Saving…";
+        const nextTag = await write(JSON.stringify(payload()), tag);
+        if (!tag) return;
+        if (nextTag) {
+          saved = submitted;
+          tag = nextTag;
+          cleanStatus = "Saved to SQLite";
+        } else {
+          unconfirmed = submitted;
+        }
       }
-      if (!response.ok) throw new Error((await response.text()).trim());
-      tag = response.headers.get("ETag");
-      if (!tag) throw new Error("Save response is missing its revision. Refresh to verify.");
-      saved = submitted;
-      cleanStatus = "Saved to SQLite";
+      if (unconfirmed !== undefined) {
+        status.textContent = "Checking the saved version…";
+        await verifySave();
+        unconfirmed = undefined;
+      }
     } catch (error) {
-      status.textContent = String(error);
+      status.textContent = unconfirmed === undefined ? String(error)
+        : "Could not verify the save. Your draft is still here. Check again when connected.";
     } finally {
       pending = false;
-      if (tag && (saved === submitted || current !== submitted)) showDraftStatus();
-      save.disabled = !available();
-      if (current !== submitted) schedule();
+      save.textContent = unconfirmed === undefined ? `Save ${name}` : "Check saved version";
+      if (tag && unconfirmed === undefined && (saved === submitted || current !== submitted)) showDraftStatus();
+      save.disabled = unconfirmed === undefined && !available();
+      if (tag && unconfirmed === undefined && current !== submitted) schedule();
     }
   }
   save.onclick = submit;

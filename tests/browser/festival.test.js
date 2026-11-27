@@ -263,3 +263,65 @@ test("linked edits yield the same saved program in every order", async () => {
     assert.equal(reset.status, 204);
   }
 });
+
+test("a connection error reads back the saved version and retains the draft", async t => {
+  for (const outcome of ["committed", "never received", "offline", "superseded"]) {
+    await t.test(outcome, async () => {
+      await openForm();
+      const endpoint = origin + "/api/festival";
+      const baseline = await (await fetch(endpoint)).json();
+      const name = baseline.name + " edit";
+      await run(`
+        const [outcome, name] = arguments;
+        const auto = document.querySelector('[role=switch]');
+        if (auto.checked) auto.click();
+        const input = document.querySelector('input[data-value-path="/name"]');
+        input.value = name;
+        input.dispatchEvent(new Event('input', {bubbles: true}));
+        const realFetch = window.fetch;
+        window.requests = [];
+        window.connected = false;
+        window.fetch = async (url, options) => {
+          window.requests.push(options?.method ?? "GET");
+          if (options?.method === 'PUT') {
+            if (outcome !== 'never received') {
+              const receipt = await realFetch(url, options);
+              if (outcome === 'superseded') {
+                const changed = {...JSON.parse(options.body), name: 'Another saved value'};
+                await realFetch(url, {...options, headers: {...options.headers, 'If-Match': receipt.headers.get('ETag')}, body: JSON.stringify(changed)});
+              }
+            }
+            throw new TypeError('Connection interrupted');
+          }
+          if (outcome === 'offline' && !window.connected) throw new TypeError('Offline');
+          return realFetch(url, options);
+        };
+        document.querySelector('#festival-save button').click();
+      `, outcome, name);
+      async function waitForStatus(fragment) {
+        for (let i = 0; i < 100; i++) {
+          if (await run("return document.querySelector('[role=status]').textContent.includes(arguments[0])", fragment)) return;
+          await delay(50);
+        }
+        assert.fail("Missing status: " + fragment);
+      }
+      await waitForStatus({committed: "Saved to SQLite", "never received": "retry Save", offline: "Could not verify", superseded: "saved version changed"}[outcome]);
+      assert.deepEqual(await run("return window.requests"), ["PUT", "GET"]);
+      if (outcome === "offline") {
+        await run(`
+          window.connected = true;
+          const input = document.querySelector('input[data-value-path="/name"]');
+          input.value += " offline draft";
+          input.dispatchEvent(new Event('input', {bubbles: true}));
+          document.querySelector('#festival-save button').click();
+        `);
+        await waitForStatus("Unsaved changes");
+        assert.deepEqual(await run("return window.requests"), ["PUT", "GET", "GET"]);
+      }
+      assert.equal(await run('return document.querySelector(\'input[data-value-path="/name"]\').value'),
+        outcome === "offline" ? name + " offline draft" : name);
+      const stored = await (await fetch(endpoint)).json();
+      assert.equal(stored.name, outcome === "never received" ? baseline.name : outcome === "superseded" ? "Another saved value" : name);
+    });
+  }
+});
